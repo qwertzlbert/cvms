@@ -24,14 +24,14 @@ scrape_configs:
     metrics_path: '/metrics'
     static_configs:
       - targets: ['cvms-exporter:9200']
-      - labels:
+        labels:
           service: 'cvms'
 
   - job_name: 'indexer'
     metrics_path: '/metrics'
     static_configs:
       - targets: ['cvms-indexer:9300']
-      - labels:
+        labels:
           service: 'cvms'          
 
   - job_name: 'prometheus'
