@@ -11,7 +11,7 @@ const (
 	MainnetLabel      = "mainnet"
 
 	// labels for packages
-	ValidatorAddressLabel    = "validator_opeartor_address"
+	ValidatorAddressLabel    = "validator_operator_address"
 	ConsensusAddressLabel    = "validator_consensus_address"
 	MonikerLabel             = "moniker"
 	ProposerAddressLabel     = "proposer_address"
