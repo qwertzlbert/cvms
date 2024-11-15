@@ -230,7 +230,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(ceil(cvms_uptime_signed_blocks_window * (1 - cvms_uptime_min_signed_per_window)) - on (chain_id) group_right () cvms_uptime_missed_blocks_counter) without (proposer_address, validator_consensus_address, validator_opeartor_address, instance, job, package, service)\n* on (chain_id) group_left () min by (chain_id) (60*60 / delta(cvms_block_height[1h]))",
+          "expr": "sum(ceil(cvms_uptime_signed_blocks_window * (1 - cvms_uptime_min_signed_per_window)) - on (chain_id) group_right () cvms_uptime_missed_blocks_counter) without (proposer_address, validator_consensus_address, validator_operator_address, instance, job, package, service)\n* on (chain_id) group_left () min by (chain_id) (60*60 / delta(cvms_block_height[1h]))",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1170,7 +1170,7 @@
             "uid": "cvms_exporter_db"
           },
           "editorMode": "code",
-          "expr": "sum(cvms_yoda_status) without (validator_opeartor_address, instance, job, instance)",
+          "expr": "sum(cvms_yoda_status) without (validator_operator_address, instance, job, instance)",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -1470,7 +1470,7 @@
             "uid": "cvms_exporter_db"
           },
           "editorMode": "code",
-          "expr": "round((1 - sum(cvms_uptime_missed_blocks_counter{mainnet=\"true\"}) without (instance, job, package, validator_consensus_address, validator_opeartor_address, proposer_address) / on (chain_id) group_left cvms_uptime_signed_blocks_window) * 100, 0.01)",
+          "expr": "round((1 - sum(cvms_uptime_missed_blocks_counter{mainnet=\"true\"}) without (instance, job, package, validator_consensus_address, validator_operator_address, proposer_address) / on (chain_id) group_left cvms_uptime_signed_blocks_window) * 100, 0.01)",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,

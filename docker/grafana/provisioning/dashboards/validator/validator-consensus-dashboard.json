@@ -205,7 +205,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "  sum without (proposer_address, validator_consensus_address, validator_opeartor_address, instance, job, package, service) (\n      ceil(cvms_uptime_signed_blocks_window * (1 - cvms_uptime_min_signed_per_window))\n    - on (chain, chain_id) group_right ()\n      cvms_uptime_missed_blocks_counter\n  )\n* on (chain_id) group_left () (min by (chain_id) (60 / delta(cvms_block_height[1m])))",
+          "expr": "  sum without (proposer_address, validator_consensus_address, validator_operator_address, instance, job, package, service) (\n      ceil(cvms_uptime_signed_blocks_window * (1 - cvms_uptime_min_signed_per_window))\n    - on (chain, chain_id) group_right ()\n      cvms_uptime_missed_blocks_counter\n  )\n* on (chain_id) group_left () (min by (chain_id) (60 / delta(cvms_block_height[1m])))",
           "format": "table",
           "instant": true,
           "interval": "",
