@@ -88,7 +88,7 @@ func StartExporterCmd() *cobra.Command {
 				logger.Println("Server Stopped")
 				close(done)
 			}()
-
+			logger.Debugf("the server is listening in :%s", port)
 			if err := exporterServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				logger.Fatalf("Listen error: %v", err)
 			}
@@ -146,7 +146,7 @@ func StartIndexerCmd() *cobra.Command {
 				logger.Println("Server Stopped")
 				close(done)
 			}()
-
+			logger.Debugf("the server is listening in :%s", port)
 			if err := indexerServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				logger.Fatalf("Listen error: %v", err)
 			}

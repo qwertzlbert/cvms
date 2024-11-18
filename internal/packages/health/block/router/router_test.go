@@ -41,6 +41,11 @@ func TestRequestBlockTimeStamp(t *testing.T) {
 			chainType:   "ethereum",
 			hostAddress: os.Getenv("TEST_BERA_HOST_ADDRESS"),
 		},
+		{
+			testingName: "Namada Block Package Testing",
+			chainType:   "cosmos",
+			hostAddress: os.Getenv("TEST_NAMADA_HOST_ADDRESS"),
+		},
 	}
 
 	for _, tc := range testCases {
