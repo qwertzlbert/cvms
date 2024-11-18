@@ -47,6 +47,10 @@ func SetupForTest() string {
 
 	rootPath := strings.Split(string(out), "/go.mod")[0]
 	envPath := fmt.Sprintf("%s/internal/testutil/%s", rootPath, ".env.test")
+	_, err := os.Stat(envPath)
+	if err != nil {
+		panic("err: unexisted .env.test to test")
+	}
 
 	// load .env.test variables
 	godotenv.Load(envPath)
