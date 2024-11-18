@@ -1056,7 +1056,6 @@ self-1:
     - upgrade
     - uptime
     - voteindexer
-    - veindexer
 sentinelhub-2:
   chain_name: sentinel
   protocol_type: cosmos
