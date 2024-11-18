@@ -777,6 +777,12 @@ mocha-4-bridge:
   support_asset:
   packages:
     - block
+namada-dryrun.abaaeaf7b78cb3ac:
+  chain_name: namada
+  protocol_type: cosmos
+  mainnet: true
+  packages:
+    - block
 neutron-1:
   chain_name: neutron
   protocol_type: cosmos
