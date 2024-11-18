@@ -63,7 +63,7 @@ func validateChainName(cfg *MonitoringConfig) (bool, error) {
 	for _, cc := range cfg.ChainConfigs {
 		_, exist := supportChains.Chains[cc.ChainID]
 		if !exist {
-			return false, errors.Errorf("config has unsupported name in your config: %s.\nCheck your chain-id the error target. chain-id(%s) would be matched in one of support_chains", cc.DisplayName, cc.ChainID)
+			return false, errors.Errorf("config has unsupported name in your config: %s.\nCheck your chain-id the error target. chain-id(%s) would be matched in one of support_chains[./docker/cvms/support_chains.yaml]", cc.DisplayName, cc.ChainID)
 		}
 	}
 
