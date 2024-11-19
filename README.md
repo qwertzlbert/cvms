@@ -67,7 +67,7 @@ The packages currently supported by CVMS are as follows:
 
 **Initially, we could not account for all app chains within the Cosmos ecosystem.** Therefore, by default, this application operates based on the chains listed in [support_chains.yaml](./docker/cvms/support_chains.yaml)
 
-If the chain you want to monitor is not in the support chain list, you can add it to the [custom_chains.yaml](./docker/cvms/custom_chains.yaml) list or update the support chains list through a PR.
+If the chain you want to monitor is not in the support chain list, you can add it to the [custom_chains.yaml](./docker/cvms/custom_chains.yaml.example) list or update the support chains list through a PR.
 
 If you want to know more details how to setup CVMS from scratch, Click [here](./docs/setup.md)👇
 

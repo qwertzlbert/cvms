@@ -6,7 +6,7 @@
 
 * [[KR] Cosmos Validator Monitoring Service (CVMS) 🌌 🔭 를 통한 Cosmos-SDK 기반 블록체인 노드를 효과적으로 모니터링하는 방법](https://medium.com/cosmostation/cosmos-validator-monitoring-service-cvms-%EB%A5%BC-%ED%86%B5%ED%95%9C-cosmos-sdk-%EA%B8%B0%EB%B0%98-%EB%B8%94%EB%A1%9D%EC%B2%B4%EC%9D%B8-%EB%85%B8%EB%93%9C%EB%A5%BC-%ED%9A%A8%EA%B3%BC%EC%A0%81%EC%9C%BC%EB%A1%9C-%EB%AA%A8%EB%8B%88%ED%84%B0%EB%A7%81%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95-8b5541bcb834)
 
-## Example Setup
+## Example: Setup
 
 Copy the `.env` file if you need to cutomize service ports, log-level, prometheus.yaml or other configurations.
 
@@ -179,4 +179,31 @@ chains:
       - rpc: 'https://rpc-axelar.endpoint.xyz'
         api: 'https://lcd-axelar.endpoint.xyz'
         grpc: 'grpc-axelar.endpoint.xyz:9090'
+```
+
+## Example: Supporting Custom Chain
+
+For devents, testnets, localnet even if unsupported mainnets, Use `custom_chains.yaml` for CVMS
+
+```bash
+# Copy custom_chains.yaml from example
+# You should locate it into docker/cvms/custom_chains.yaml
+cp docker/cvms/custom_chains.yaml.example docker/cvms/custom_chains.yaml
+```
+
+**Example custom_chains.yaml**
+
+```yaml
+---
+mintstation-1:
+  protocol_type: cosmos
+  support_asset:
+    denom: umint
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer #for cometbft consensus vote
+    - veindexer # for vote-extension
 ```
