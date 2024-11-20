@@ -27,6 +27,16 @@ const (
 	UnHealthSleep  = 10 * time.Second
 
 	YodaStatusMetricName = "status"
+	// This metric is used to track the total number of request misses,
+	// from the startup to the application.
+	YodaTotalRequestMisses = "total_miss_counter"
+	// Collects the maximum number of current misses from all requests the validator
+	// has to respond and which are not yet expired
+	YodaMaxMisses = "max_miss_counter"
+	// Collects the miss counter per request. Note: probably makes sense to limit to the last 100 or so requests.
+	YodaMissesPerRequest = "miss_counter"
+	// Shows the maximum number of blocks a yoda oracle has time to respond to a request
+	YodaRequestSlashWindow = "slash_window"
 )
 
 func Start(p common.Packager) error {
@@ -40,7 +50,7 @@ func Start(p common.Packager) error {
 		}
 		return nil
 	}
-	return errors.Errorf("unsupprted chain: %s", p.ChainName)
+	return errors.Errorf("unsupported chain: %s", p.ChainName)
 }
 
 func loop(c *common.Exporter, p common.Packager) {
@@ -48,7 +58,7 @@ func loop(c *common.Exporter, p common.Packager) {
 	packageLabels := common.BuildPackageLabels(p)
 
 	// each validators
-	yodaMetrics := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
+	yodaStatusMetrics := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace:   common.Namespace,
 		Subsystem:   Subsystem,
 		ConstLabels: packageLabels,
@@ -56,6 +66,46 @@ func loop(c *common.Exporter, p common.Packager) {
 	}, []string{
 		common.ValidatorAddressLabel,
 		common.MonikerLabel,
+	})
+
+	// yodaTotalMisses := p.Factory.NewCounterVec(prometheus.CounterOpts{
+	// 	Namespace:   common.Namespace,
+	// 	Subsystem:   Subsystem,
+	// 	ConstLabels: packageLabels,
+	// 	Name:        YodaTotalRequestMisses,
+	// }, []string{
+	// 	common.ValidatorAddressLabel,
+	// 	common.MonikerLabel,
+	// })
+
+	// yodaMaxMisses := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
+	// 	Namespace:   common.Namespace,
+	// 	Subsystem:   Subsystem,
+	// 	ConstLabels: packageLabels,
+	// 	Name:        YodaMaxMisses,
+	// }, []string{
+	// 	common.ValidatorAddressLabel,
+	// 	common.MonikerLabel,
+	// })
+
+	// each validator and non-expired request
+	// yodaRequestMisses := p.Factory.NewCounterVec(prometheus.CounterOpts{
+	// 	Namespace:   common.Namespace,
+	// 	Subsystem:   Subsystem,
+	// 	ConstLabels: packageLabels,
+	// 	Name:        YodaMissesPerRequest,
+	// }, []string{
+	// 	common.ValidatorAddressLabel,
+	// 	common.MonikerLabel,
+	// 	common.YodaRequestIDLabel,
+	// })
+
+	// each chain
+	yodaSlashWindow := p.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		ConstLabels: packageLabels,
+		Name:        YodaRequestSlashWindow,
 	})
 
 	isUnhealth := false
@@ -92,7 +142,7 @@ func loop(c *common.Exporter, p common.Packager) {
 		if p.Mode == common.NETWORK {
 			// update metrics for each validators
 			for _, item := range status.Validators {
-				yodaMetrics.
+				yodaStatusMetrics.
 					With(prometheus.Labels{
 						common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
 						common.MonikerLabel:          item.Moniker,
@@ -104,7 +154,7 @@ func loop(c *common.Exporter, p common.Packager) {
 			// filter metrics for only specific validator
 			for _, item := range status.Validators {
 				if ok := helper.Contains(packageMonikers, item.Moniker); ok {
-					yodaMetrics.
+					yodaStatusMetrics.
 						With(prometheus.Labels{
 							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
 							common.MonikerLabel:          item.Moniker,
@@ -113,6 +163,9 @@ func loop(c *common.Exporter, p common.Packager) {
 				}
 			}
 		}
+
+		// update metrics for each chain
+		yodaSlashWindow.Set(status.SlashWindow)
 
 		c.Infof("updated %s metrics successfully and going to sleep %s ...", Subsystem, SubsystemSleep.String())
 

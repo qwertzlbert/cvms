@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/cosmostation/cvms/internal/packages/duty/yoda/types"
 )
@@ -17,4 +18,16 @@ func BandYodaParser(resp []byte) (float64, error) {
 		return 0, nil
 	}
 	return 1, nil
+}
+
+func BandYodaParamsParser(resp []byte) (float64, error) {
+	var result types.BandYodaParamsResponse
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return 0, fmt.Errorf("parsing error: %s", err.Error())
+	}
+	slashWindow, err := strconv.ParseFloat(result.Params.SlashWindow, 64)
+	if err != nil {
+		return 0, fmt.Errorf("conversion error: %s", err.Error())
+	}
+	return slashWindow, nil
 }

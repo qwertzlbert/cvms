@@ -19,4 +19,5 @@ const (
 	OrchestratorAddressLabel = "orchestrator_address"
 	BalanceAddressLabel      = "balance_address"
 	UpgradeNameLabel         = "upgrade_name"
+	YodaRequestIDLabel       = "yoda_request_id"
 )

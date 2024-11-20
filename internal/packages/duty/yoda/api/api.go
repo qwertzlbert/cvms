@@ -17,6 +17,8 @@ func GetYodaStatus(
 	c *common.Exporter,
 	CommonYodaQueryPath string,
 	CommonYodaParser func([]byte) (float64, error),
+	CommonYodaParamsPath string,
+	CommonYodaParamsParser func([]byte) (slashWindow float64, err error),
 ) (types.CommonYodaStatus, error) {
 	// init context
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
@@ -87,12 +89,17 @@ func GetYodaStatus(
 				return
 			}
 
+			maxMisses := float64(0)
+			totalMisses := float64(0)
+
 			ch <- helper.Result{
 				Success: true,
 				Item: types.ValidatorStatus{
 					IsActive:                 isActive,
 					ValidatorOperatorAddress: validatorOperatorAddress,
 					Moniker:                  validatorMoniker,
+					MaxMisses:                maxMisses,
+					TotalMisses:              totalMisses,
 				}}
 		}(ch)
 		time.Sleep(10 * time.Millisecond)
@@ -119,7 +126,25 @@ func GetYodaStatus(
 		return types.CommonYodaStatus{}, common.ErrFailedHttpRequest
 	}
 
+	// get oracle params by each chain
+	resp, err = requester.Get(CommonYodaParamsPath)
+	if err != nil {
+		c.Errorf("api error: %s", err)
+		return types.CommonYodaStatus{}, common.ErrFailedHttpRequest
+	}
+	if resp.StatusCode() != http.StatusOK {
+		c.Errorf("api error: [%d] %s", resp.StatusCode(), err)
+		return types.CommonYodaStatus{}, common.ErrGotStrangeStatusCode
+	}
+
+	yodaSlashWindow, err := CommonYodaParamsParser(resp.Body())
+	if err != nil {
+		c.Errorf("api error: %s", err)
+		return types.CommonYodaStatus{}, common.ErrFailedJsonUnmarshal
+	}
+
 	return types.CommonYodaStatus{
-		Validators: yodaResults,
+		SlashWindow: yodaSlashWindow,
+		Validators:  yodaResults,
 	}, nil
 }

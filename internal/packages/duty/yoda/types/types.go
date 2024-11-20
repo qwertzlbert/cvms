@@ -12,17 +12,29 @@ const (
 
 	// band paths
 	BandYodaQueryPath = "/oracle/v1/validators/{validator_address}"
+
+	// band oracle params paths
+	BandYodaParamsPath = "/oracle/v1/params"
+
+	// band oracle path to get total request counts
+	BandYodaRequestCountsPath = "/oracle/v1/counts"
+
+	// band oracle path to get request details by request ID
+	BandYodaRequestsPath = "/oracle/v1/requests/{request_id}"
 )
 
 // common
 type CommonYodaStatus struct {
-	Validators []ValidatorStatus
+	SlashWindow float64 `json:"slash_window"`
+	Validators  []ValidatorStatus
 }
 
 type ValidatorStatus struct {
 	Moniker                  string  `json:"moniker"`
 	ValidatorOperatorAddress string  `json:"validator_operator_address"`
 	IsActive                 float64 `json:"is_active"`
+	MaxMisses                float64 `json:"max_misses"`
+	TotalMisses              float64 `json:"total_misses"`
 }
 
 type CommonValidatorsQueryResponse struct {
@@ -44,4 +56,10 @@ type BandYodaResponse struct {
 		IsActive bool      `json:"is_active"`
 		Since    time.Time `json:"since"`
 	} `json:"status"`
+}
+
+type BandYodaParamsResponse struct {
+	Params struct {
+		SlashWindow string `json:"expiration_block_count"`
+	} `json:"params"`
 }
