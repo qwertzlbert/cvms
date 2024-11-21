@@ -108,6 +108,13 @@ func loop(c *common.Exporter, p common.Packager) {
 		Name:        YodaRequestSlashWindow,
 	})
 
+	yodaRequestCount := p.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		ConstLabels: packageLabels,
+		Name:        "request_count",
+	})
+
 	isUnhealth := false
 	for {
 		// node health check
@@ -166,6 +173,7 @@ func loop(c *common.Exporter, p common.Packager) {
 
 		// update metrics for each chain
 		yodaSlashWindow.Set(status.SlashWindow)
+		yodaRequestCount.Set(status.RequestCount)
 
 		c.Infof("updated %s metrics successfully and going to sleep %s ...", Subsystem, SubsystemSleep.String())
 

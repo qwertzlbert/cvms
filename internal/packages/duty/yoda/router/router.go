@@ -9,10 +9,12 @@ import (
 
 func GetStatus(client *common.Exporter, chainName string) (types.CommonYodaStatus, error) {
 	var (
-		commonYodaQueryPath    string
-		commonYodaParser       func(resp []byte) (isActive float64, err error)
-		commonYodaParamsPath   string
-		commonYodaParamsParser func(resp []byte) (slashingWindow float64, err error)
+		commonYodaQueryPath           string
+		commonYodaParser              func(resp []byte) (isActive float64, err error)
+		commonYodaParamsPath          string
+		commonYodaParamsParser        func(resp []byte) (slashingWindow float64, err error)
+		CommonYodaRequestCountsPath   string
+		CommonYodaRequestCountsParser func(resp []byte) (requestCount float64, err error)
 	)
 
 	switch chainName {
@@ -21,8 +23,10 @@ func GetStatus(client *common.Exporter, chainName string) (types.CommonYodaStatu
 		commonYodaParser = parser.BandYodaParser
 		commonYodaParamsPath = types.BandYodaParamsPath
 		commonYodaParamsParser = parser.BandYodaParamsParser
+		CommonYodaRequestCountsPath = types.BandYodaRequestCountsPath
+		CommonYodaRequestCountsParser = parser.BandYodaRequestCountParser
 
-		return api.GetYodaStatus(client, commonYodaQueryPath, commonYodaParser, commonYodaParamsPath, commonYodaParamsParser)
+		return api.GetYodaStatus(client, commonYodaQueryPath, commonYodaParser, commonYodaParamsPath, commonYodaParamsParser, CommonYodaRequestCountsPath, CommonYodaRequestCountsParser)
 	default:
 		return types.CommonYodaStatus{}, common.ErrOutOfSwitchCases
 	}

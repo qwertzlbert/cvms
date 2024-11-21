@@ -19,6 +19,8 @@ func GetYodaStatus(
 	CommonYodaParser func([]byte) (float64, error),
 	CommonYodaParamsPath string,
 	CommonYodaParamsParser func([]byte) (slashWindow float64, err error),
+	CommonYodaRequestCountsPath string,
+	CommonYodaRequestCountsParser func([]byte) (requestCount float64, err error),
 ) (types.CommonYodaStatus, error) {
 	// init context
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
@@ -40,6 +42,24 @@ func GetYodaStatus(
 
 	// json unmarsharling received validators data
 	var validators types.CommonValidatorsQueryResponse
+	if err := json.Unmarshal(resp.Body(), &validators); err != nil {
+		c.Errorf("api error: %s", err)
+		return types.CommonYodaStatus{}, common.ErrFailedJsonUnmarshal
+	}
+
+	// get current request count
+	resp, err = requester.Get(CommonYodaRequestCountsPath)
+	if err != nil {
+		c.Errorf("api error: %s", err)
+		return types.CommonYodaStatus{}, common.ErrFailedHttpRequest
+	}
+	if resp.StatusCode() != http.StatusOK {
+		c.Errorf("api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
+		return types.CommonYodaStatus{}, common.ErrGotStrangeStatusCode
+	}
+
+	// json unmarsharling received request count data
+	requestCount, err := CommonYodaRequestCountsParser(resp.Body())
 	if err := json.Unmarshal(resp.Body(), &validators); err != nil {
 		c.Errorf("api error: %s", err)
 		return types.CommonYodaStatus{}, common.ErrFailedJsonUnmarshal
@@ -144,7 +164,8 @@ func GetYodaStatus(
 	}
 
 	return types.CommonYodaStatus{
-		SlashWindow: yodaSlashWindow,
-		Validators:  yodaResults,
+		SlashWindow:  yodaSlashWindow,
+		RequestCount: requestCount,
+		Validators:   yodaResults,
 	}, nil
 }

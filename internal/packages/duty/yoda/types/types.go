@@ -25,8 +25,9 @@ const (
 
 // common
 type CommonYodaStatus struct {
-	SlashWindow float64 `json:"slash_window"`
-	Validators  []ValidatorStatus
+	SlashWindow  float64 `json:"slash_window"`
+	RequestCount float64 `json:"request_count"`
+	Validators   []ValidatorStatus
 }
 
 type ValidatorStatus struct {
@@ -62,4 +63,8 @@ type BandYodaParamsResponse struct {
 	Params struct {
 		SlashWindow string `json:"expiration_block_count"`
 	} `json:"params"`
+}
+
+type BandYodaRequestCountResponse struct {
+	RequestCount string `json:"request_count"`
 }

@@ -31,3 +31,15 @@ func BandYodaParamsParser(resp []byte) (float64, error) {
 	}
 	return slashWindow, nil
 }
+
+func BandYodaRequestCountParser(resp []byte) (float64, error) {
+	var result types.BandYodaRequestCountResponse
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return 0, fmt.Errorf("parsing error: %s", err.Error())
+	}
+	requestCount, err := strconv.ParseFloat(result.RequestCount, 64)
+	if err != nil {
+		return 0, fmt.Errorf("conversion error: %s", err.Error())
+	}
+	return requestCount, nil
+}
