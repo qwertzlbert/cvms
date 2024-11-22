@@ -230,7 +230,7 @@ celestia:
 celestia-bridge:
   chain_name: celestia
   protocol_type: celestia
-  mainnet: false
+  mainnet: true
   support_asset:
   packages:
     - block
