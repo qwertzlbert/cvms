@@ -50,8 +50,9 @@ func GetSupportChainConfig() (*SupportChains, error) {
 
 	// Merge the two configurations
 	for chainName, chainDetail := range ctCfg.Chains {
+		// NOTE: this will override chain config for users to use custom_chains.yaml
 		if _, exists := scCfg.Chains[chainName]; exists {
-			return nil, errors.Errorf("duplicate chain found: %s", chainName)
+			scCfg.Chains[chainName] = chainDetail
 		}
 
 		// Add custom chains by custom_chains.yaml
