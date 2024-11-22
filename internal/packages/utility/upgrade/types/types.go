@@ -6,6 +6,6 @@ var (
 
 type CommonUpgrade struct {
 	RemainingTime   float64
-	RemainingHeight float64
+	RemainingBlocks float64
 	UpgradeName     string
 }

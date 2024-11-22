@@ -74,7 +74,7 @@ func selectPackage(
 		}
 		return block.Start(*p)
 	case pkg == "upgrade":
-		endpoints := common.Endpoints{APIs: validAPIs, CheckAPI: true}
+		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints)
 		if err != nil {
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)

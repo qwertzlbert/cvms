@@ -58,15 +58,15 @@ func GetUpgradeStatus(
 
 		// calculate remaining time seconds
 		estimatedBlockTime := (latestBlockTimestamp.Unix() - previousBlockTimestamp.Unix()) / (latestBlockHeight - previousHeight)
-		remainingHeight := upgradeHeight - latestBlockHeight
-		remainingTime := remainingHeight * estimatedBlockTime
+		remainingBlocks := upgradeHeight - latestBlockHeight
+		remainingTime := remainingBlocks * estimatedBlockTime
 
 		c.Infof("on-chain upgrade's remaining time: %d seconds", remainingTime)
-		c.Infof("on-chain upgrade's remaining height: %d blocks", remainingHeight)
+		c.Infof("on-chain upgrade's remaining height: %d blocks", remainingBlocks)
 		return types.CommonUpgrade{
 			UpgradeName:     upgradeName,
 			RemainingTime:   float64(remainingTime),
-			RemainingHeight: float64(remainingHeight),
+			RemainingBlocks: float64(remainingBlocks),
 		}, nil
 	}
 }
