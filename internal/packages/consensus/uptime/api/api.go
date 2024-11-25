@@ -23,14 +23,14 @@ func GetUptimeStatus(exporter *common.Exporter) (types.CommonUptimeStatus, error
 	exporter.Debugf("got total consensus validators: %d", len(validators))
 
 	// 3. get validators' uptime status
-	validatorUptimeStatus, err := getValidatorUptimeStatus(exporter.CommonApp, validators, stakingValidators)
+	validatorUptimeStatus, err := getValidatorUptimeStatus(exporter.CommonApp, exporter.ChainName, validators, stakingValidators)
 	if err != nil {
 		return types.CommonUptimeStatus{}, errors.Cause(err)
 	}
 	exporter.Debugf("got total validator uptime: %d", len(validatorUptimeStatus))
 
 	// 4. get on-chain uptime parameter
-	signedBlocksWindow, minSignedPerWindow, err := getUptimeParams(exporter.CommonClient)
+	signedBlocksWindow, minSignedPerWindow, err := getUptimeParams(exporter.CommonClient, exporter.ChainName)
 	if err != nil {
 		return types.CommonUptimeStatus{}, errors.Cause(err)
 	}
@@ -87,7 +87,7 @@ func GetConsumserUptimeStatus(exporter *common.Exporter, chainID string) (types.
 	exporter.Debugf("got total consumer validator uptime: %d", len(validatorUptimeStatus))
 
 	// 5. get on-chain slashing parameter
-	signedBlocksWindow, minSignedPerWindow, err := getUptimeParams(consumerClient)
+	signedBlocksWindow, minSignedPerWindow, err := getUptimeParams(consumerClient, exporter.ChainName)
 	if err != nil {
 		return types.CommonUptimeStatus{}, errors.Cause(err)
 	}

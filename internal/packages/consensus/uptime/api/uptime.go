@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
+	commonparser "github.com/cosmostation/cvms/internal/common/parser"
 	commontypes "github.com/cosmostation/cvms/internal/common/types"
 	"github.com/cosmostation/cvms/internal/helper"
 	sdkhelper "github.com/cosmostation/cvms/internal/helper/sdk"
-	"github.com/cosmostation/cvms/internal/packages/consensus/uptime/parser"
 	"github.com/cosmostation/cvms/internal/packages/consensus/uptime/types"
 	"github.com/pkg/errors"
 )
@@ -22,10 +22,27 @@ import (
 // TODO: first parameter should change from indexer struct to interface
 // TODO: Modify error wrapping
 // query current staking validators
-func getValidatorUptimeStatus(c common.CommonApp, validators []commontypes.CosmosValidator, stakingValidators []commontypes.CosmosStakingValidator) (
+func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators []commontypes.CosmosValidator, stakingValidators []commontypes.CosmosStakingValidator) (
 	[]types.ValidatorUptimeStatus,
 	error,
 ) {
+	var (
+		queryPathFunction func(string) string
+		parser            func(resp []byte) (consensusAddress string, indexOffset float64, isTomstoned float64, missedBlocksCounter float64, err error)
+	)
+
+	switch chainName {
+	// case "initia":
+	// 	queryPath = types.InitiaStakingValidatorQueryPath(defaultStatus)
+	// 	stakingValidatorParser = parser.InitiaStakingValidatorParser
+	case "story":
+		queryPathFunction = commontypes.StorySlashingQueryPath
+		parser = commonparser.StorySlashingParser
+	default:
+		queryPathFunction = commontypes.CosmosSlashingQueryPath
+		parser = commonparser.CosmosSlashingParser
+	}
+
 	// init context
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
@@ -73,7 +90,7 @@ func getValidatorUptimeStatus(c common.CommonApp, validators []commontypes.Cosmo
 		proposerAddress, _ := sdkhelper.ProposerAddressFromPublicKey(item.ConsensusPubkey.Key)
 		validatorOperatorAddress := item.OperatorAddress
 		consensusAddress := pubkeysMap[item.ConsensusPubkey.Key]
-		queryPath := commontypes.CosmosSlashingQueryPath(consensusAddress)
+		queryPath := queryPathFunction(consensusAddress)
 
 		go func(ch chan helper.Result) {
 			defer helper.HandleOutOfNilResponse(c.Entry)
@@ -94,9 +111,9 @@ func getValidatorUptimeStatus(c common.CommonApp, validators []commontypes.Cosmo
 				return
 			}
 
-			_, _, isTomstoned, missedBlocksCounter, err := parser.CosmosUptimeParser(resp.Body())
+			_, _, isTomstoned, missedBlocksCounter, err := parser(resp.Body())
 			if err != nil {
-				// c.Errorf("errors: %s", err)
+				c.Errorf("errors: %s", err)
 				ch <- helper.Result{Item: nil, Success: false}
 				return
 			}
@@ -187,7 +204,7 @@ func getConsumerValidatorUptimeStatus(
 				return
 			}
 
-			_, _, isTomstoned, missedBlocksCounter, err := parser.CosmosUptimeParser(resp.Body())
+			_, _, isTomstoned, missedBlocksCounter, err := commonparser.CosmosSlashingParser(resp.Body())
 			if err != nil {
 				ch <- helper.Result{Item: nil, Success: false}
 				return
@@ -234,32 +251,44 @@ func getConsumerValidatorUptimeStatus(
 	return validatorResult, nil
 }
 
-func getUptimeParams(c common.CommonClient) (
+func getUptimeParams(c common.CommonClient, chainName string) (
 	/* signed blocks window */ float64,
 	/* minimum signed per window */ float64,
 	/* unexpected error */ error,
 ) {
-	// init context
+	var (
+		queryPath string
+		parser    func(resp []byte) (signedBlocksWindow float64, minSignedPerWindow float64, err error)
+	)
+
+	switch chainName {
+	case "story":
+		queryPath = commontypes.StorySlashingParamsQueryPath
+		parser = commonparser.StorySlashingParamsParser
+	default:
+		queryPath = commontypes.CosmosSlashingParamsQueryPath
+		parser = commonparser.CosmosSlashingParamsParser
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	// create requester
 	requester := c.APIClient.R().SetContext(ctx)
-
-	// get uptime params by each chain
-	resp, err := requester.Get(commontypes.CosmosSlashingParamsQueryPath)
+	resp, err := requester.Get(queryPath)
 	if err != nil {
 		return 0, 0, errors.Cause(err)
 	}
 	if resp.StatusCode() != http.StatusOK {
-		return 0, 0, errors.Wrapf(err, "api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
+		return 0, 0, errors.Errorf("api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
 	}
 
-	signedBlocksWindow, minSignedPerWindow, err := parser.CosmosUptimeParamsParser(resp.Body())
+	signedBlocksWindow, minSignedPerWindow, err := parser(resp.Body())
 	if err != nil {
-
 		return 0, 0, errors.Cause(err)
 	}
+
+	c.Debugf("signed block window: %.f", signedBlocksWindow)
+	c.Debugf("min signed per window: %.2f", minSignedPerWindow)
 	return signedBlocksWindow, minSignedPerWindow, nil
 }
 
