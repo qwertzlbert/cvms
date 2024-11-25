@@ -193,6 +193,9 @@ cp docker/cvms/custom_chains.yaml.example docker/cvms/custom_chains.yaml
 # And then Mount your custom_chains.yaml into docker compose
 # Just uncomment the CUSTOM_CHAINS_FILE
 CUSTOM_CHAINS_FILE=custom_chains.yaml
+
+# After init CVMS, you can check current support_chains with custom_chains by using exporter app
+curl -X GET http://localhost:9200/support_chains
 ```
 
 **Example custom_chains.yaml**
