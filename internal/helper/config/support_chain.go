@@ -25,6 +25,14 @@ type Asset struct {
 	Decimal int    `yaml:"decimal"`
 }
 
+func (sc *SupportChains) Marshal() ([]byte, error) {
+	yamlData, err := yaml.Marshal(sc)
+	if err != nil {
+		return nil, err
+	}
+	return yamlData, nil
+}
+
 func GetSupportChainConfig() (*SupportChains, error) {
 	dataBytes, err := os.ReadFile(MustGetSupportChainPath("support_chains.yaml"))
 	if err != nil {
