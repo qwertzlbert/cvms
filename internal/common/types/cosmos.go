@@ -243,13 +243,15 @@ type SigningInfo struct {
 }
 
 type CosmosSlashingParamsResponse struct {
-	Params struct {
-		SignedBlocksWindow      string `json:"signed_blocks_window"`
-		MinSignedPerWindow      string `json:"min_signed_per_window"`
-		DowntimeJailDuration    string `json:"downtime_jail_duration"`
-		SlashFractionDoubleSign string `json:"slash_fraction_double_sign"`
-		SlashFractionDowntime   string `json:"slash_fraction_downtime"`
-	} `json:"params"`
+	Params SlashingParam `json:"params"`
+}
+
+type SlashingParam struct {
+	SignedBlocksWindow      string `json:"signed_blocks_window"`
+	MinSignedPerWindow      string `json:"min_signed_per_window"`
+	DowntimeJailDuration    string `json:"downtime_jail_duration"`
+	SlashFractionDoubleSign string `json:"slash_fraction_double_sign"`
+	SlashFractionDowntime   string `json:"slash_fraction_downtime"`
 }
 
 const CosmosUpgradeQueryPath = "/cosmos/upgrade/v1beta1/current_plan"

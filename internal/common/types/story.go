@@ -44,3 +44,27 @@ type StoryUpgradeResponse struct {
 	} `json:"msg"`
 	Error string `json:"error"`
 }
+
+// ref; https://github.com/piplabs/story/blob/main/client/server/slashing.go
+var StorySlashingQueryPath = func(consensusAddress string) string {
+	return fmt.Sprintf("/slashing/signing_infos/%s", consensusAddress)
+}
+
+type StorySlashingResponse struct {
+	Code int64 `json:"code"`
+	Msg  struct {
+		ValidatorSigningInfo SigningInfo `json:"val_signing_info"`
+	} `json:"msg"`
+	Error string `json:"error"`
+}
+
+// ref; https://github.com/piplabs/story/blob/main/client/server/slashing.go
+var StorySlashingParamsQueryPath = "/slashing/params"
+
+type StorySlashingParamsResponse struct {
+	Code int64 `json:"code"`
+	Msg  struct {
+		Params SlashingParam `json:"params"`
+	} `json:"msg"`
+	Error string `json:"error"`
+}
