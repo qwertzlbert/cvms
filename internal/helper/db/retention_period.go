@@ -6,8 +6,18 @@ import (
 	"time"
 )
 
+const (
+	maxDuration time.Duration = 1<<63 - 1
+)
+
+var PersistenceMode string = "persistence"
+
 // Parse retention period
 func ParseRetentionPeriod(retentionPeriod string) (time.Duration, error) {
+	if retentionPeriod == PersistenceMode {
+		return maxDuration, nil
+	}
+
 	// Split the value and unit (e.g., "1d" -> "1", "d")
 	value, unit := retentionPeriod[:len(retentionPeriod)-1], retentionPeriod[len(retentionPeriod)-1:]
 
