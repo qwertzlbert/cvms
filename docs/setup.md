@@ -189,6 +189,10 @@ For devents, testnets, localnet even if unsupported mainnets, Use `custom_chains
 # Copy custom_chains.yaml from example
 # You should locate it into docker/cvms/custom_chains.yaml
 cp docker/cvms/custom_chains.yaml.example docker/cvms/custom_chains.yaml
+
+# And then Mount your custom_chains.yaml into docker compose
+# Just uncomment the CUSTOM_CHAINS_FILE
+CUSTOM_CHAINS_FILE=custom_chains.yaml
 ```
 
 **Example custom_chains.yaml**
