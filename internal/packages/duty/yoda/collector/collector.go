@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
@@ -23,7 +24,7 @@ var packageMonikers []string
 
 const (
 	Subsystem      = "yoda"
-	SubsystemSleep = 60 * time.Second
+	SubsystemSleep = 10 * time.Second
 	UnHealthSleep  = 10 * time.Second
 
 	YodaStatusMetricName = "status"
@@ -68,38 +69,6 @@ func loop(c *common.Exporter, p common.Packager) {
 		common.MonikerLabel,
 	})
 
-	// yodaTotalMisses := p.Factory.NewCounterVec(prometheus.CounterOpts{
-	// 	Namespace:   common.Namespace,
-	// 	Subsystem:   Subsystem,
-	// 	ConstLabels: packageLabels,
-	// 	Name:        YodaTotalRequestMisses,
-	// }, []string{
-	// 	common.ValidatorAddressLabel,
-	// 	common.MonikerLabel,
-	// })
-
-	// yodaMaxMisses := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
-	// 	Namespace:   common.Namespace,
-	// 	Subsystem:   Subsystem,
-	// 	ConstLabels: packageLabels,
-	// 	Name:        YodaMaxMisses,
-	// }, []string{
-	// 	common.ValidatorAddressLabel,
-	// 	common.MonikerLabel,
-	// })
-
-	// each validator and non-expired request
-	// yodaRequestMisses := p.Factory.NewCounterVec(prometheus.CounterOpts{
-	// 	Namespace:   common.Namespace,
-	// 	Subsystem:   Subsystem,
-	// 	ConstLabels: packageLabels,
-	// 	Name:        YodaMissesPerRequest,
-	// }, []string{
-	// 	common.ValidatorAddressLabel,
-	// 	common.MonikerLabel,
-	// 	common.YodaRequestIDLabel,
-	// })
-
 	// each chain
 	yodaSlashWindow := p.Factory.NewGauge(prometheus.GaugeOpts{
 		Namespace:   common.Namespace,
@@ -113,6 +82,17 @@ func loop(c *common.Exporter, p common.Packager) {
 		Subsystem:   Subsystem,
 		ConstLabels: packageLabels,
 		Name:        "request_count",
+	})
+
+	// each request
+	yodaRequests := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		ConstLabels: packageLabels,
+		Name:        "request_misses",
+	}, []string{
+		common.ValidatorAddressLabel,
+		common.YodaRequestIDLabel,
 	})
 
 	isUnhealth := false
@@ -170,6 +150,22 @@ func loop(c *common.Exporter, p common.Packager) {
 				}
 			}
 		}
+
+		// update metrics for each request
+		for _, request := range status.Requests {
+			// if request.Status == "running" {
+			for _, item := range request.ValidatorsFailedToRespond {
+				yodaRequests.
+					With(prometheus.Labels{
+						common.ValidatorAddressLabel: item,
+						common.YodaRequestIDLabel:    strconv.FormatInt(request.RequestID, 10),
+					}).
+					Set(float64(request.BlocksPassed))
+			}
+			// }
+		}
+
+		// update metrics for each request
 
 		// update metrics for each chain
 		yodaSlashWindow.Set(status.SlashWindow)

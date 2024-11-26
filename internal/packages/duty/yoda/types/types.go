@@ -21,6 +21,9 @@ const (
 
 	// band oracle path to get request details by request ID
 	BandYodaRequestsPath = "/oracle/v1/requests/{request_id}"
+
+	// band latest blockheight request
+	BandLatestBlockHeightRequestPath = "/cosmos/base/tendermint/v1beta1/blocks/latest"
 )
 
 // common
@@ -28,6 +31,7 @@ type CommonYodaStatus struct {
 	SlashWindow  float64 `json:"slash_window"`
 	RequestCount float64 `json:"request_count"`
 	Validators   []ValidatorStatus
+	Requests     []RequestStatus
 }
 
 type ValidatorStatus struct {
@@ -67,4 +71,33 @@ type BandYodaParamsResponse struct {
 
 type BandYodaRequestCountResponse struct {
 	RequestCount string `json:"request_count"`
+}
+
+type BandLatestBlockHeightResponse struct {
+	Block struct {
+		Header struct {
+			BlockHeight string `json:"height"`
+		} `json:"header"`
+	} `json:"block"`
+}
+
+type BandYodaRequestResponse struct {
+	Request *struct {
+		RequestBlock        string   `json:"request_height"`
+		RequestedValidators []string `json:"requested_validators"`
+	} `json:"request"`
+	Reports []struct {
+		Validator string `json:"validator,omitempty"`
+	} `json:"reports"`
+	Result *struct {
+		ResolveStatus string `json:"resolve_status"`
+	} `json:"result"`
+}
+
+type RequestStatus struct {
+	RequestID                 int64    `json:"request_id"`
+	Status                    string   `json:"status"` // three possible values: "running", "completed", "expired"
+	RequestHeight             int64    `json:"request_height"`
+	BlocksPassed              int64    `json:"blocks_passed"`
+	ValidatorsFailedToRespond []string `json:"validators_failed_to_respond"` // list of validator addresses
 }

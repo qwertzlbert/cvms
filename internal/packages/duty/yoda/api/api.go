@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +14,36 @@ import (
 	"github.com/cosmostation/cvms/internal/packages/duty/yoda/types"
 )
 
+func GetBlockHeight(
+	c *common.Exporter,
+	CommonYodaBlockHeightRequestPath string,
+	CommonYodaBlockHeightResponseParser func([]byte) (blockHeight int64, err error),
+) (int64, error) {
+	// init context
+	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
+	defer cancel()
+
+	// create requester
+	requester := c.APIClient.R().SetContext(ctx)
+	// get current blockheight
+	resp, err := requester.Get(CommonYodaBlockHeightRequestPath)
+	if err != nil {
+		c.Errorf("api error: %s", err)
+		return 0, common.ErrFailedHttpRequest
+	}
+	if resp.StatusCode() != http.StatusOK {
+		c.Errorf("api error: [%d] %s", resp.StatusCode(), err)
+		return 0, common.ErrGotStrangeStatusCode
+	}
+
+	blockHeight, err := CommonYodaBlockHeightResponseParser(resp.Body())
+	if err != nil {
+		c.Errorf("api error: %s", err)
+		return 0, common.ErrFailedJsonUnmarshal
+	}
+	return blockHeight, nil
+}
+
 func GetYodaStatus(
 	c *common.Exporter,
 	CommonYodaQueryPath string,
@@ -21,6 +52,9 @@ func GetYodaStatus(
 	CommonYodaParamsParser func([]byte) (slashWindow float64, err error),
 	CommonYodaRequestCountsPath string,
 	CommonYodaRequestCountsParser func([]byte) (requestCount float64, err error),
+	CommonYodaRequestPath string,
+	CommonYodaRequestParser func([]byte) (requestBlock int64, validatorsFailedToRespond []string, status string, err error),
+	currentBlockHeight int64,
 ) (types.CommonYodaStatus, error) {
 	// init context
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
@@ -60,10 +94,111 @@ func GetYodaStatus(
 
 	// json unmarsharling received request count data
 	requestCount, err := CommonYodaRequestCountsParser(resp.Body())
-	if err := json.Unmarshal(resp.Body(), &validators); err != nil {
+	if err != nil {
 		c.Errorf("api error: %s", err)
 		return types.CommonYodaStatus{}, common.ErrFailedJsonUnmarshal
 	}
+	c.Debugf("Current total request count: %.2f", requestCount)
+
+	// get oracle params by each chain
+	resp, err = requester.Get(CommonYodaParamsPath)
+	if err != nil {
+		c.Errorf("api error: %s", err)
+		return types.CommonYodaStatus{}, common.ErrFailedHttpRequest
+	}
+	if resp.StatusCode() != http.StatusOK {
+		c.Errorf("api error: [%d] %s", resp.StatusCode(), err)
+		return types.CommonYodaStatus{}, common.ErrGotStrangeStatusCode
+	}
+
+	yodaSlashWindow, err := CommonYodaParamsParser(resp.Body())
+	if err != nil {
+		c.Errorf("api error: %s", err)
+		return types.CommonYodaStatus{}, common.ErrFailedJsonUnmarshal
+	}
+
+	//
+	// Get non expired requests
+	//
+	nonExpiredResults := make([]types.RequestStatus, 0)
+
+	// As we don't want to query all requests all the time we run this in
+	// batches to reduce the number of requests sent to the API.
+	// If a batch contains an expired request, the loop will break as
+	// all other requests in the following batches will be expired as well.
+	var batchSize int = 20
+
+	var expiredCount int = 0
+	for i := int(requestCount); i > 1; i -= batchSize {
+		// init channel and waitgroup for go-routine
+		nerCh := make(chan helper.Result)
+		var nerWg sync.WaitGroup
+		for request := i; request > i-batchSize; request-- {
+			// add new wg member
+			nerWg.Add(1)
+
+			// set query path
+			queryPath := strings.Replace(CommonYodaRequestPath, "{request_id}", strconv.Itoa(request), -1)
+
+			// start go-routine
+			go func(nerCh chan helper.Result) {
+				defer helper.HandleOutOfNilResponse(c.Entry)
+				defer nerWg.Done()
+
+				resp, err := requester.Get(queryPath)
+				if err != nil {
+					if resp == nil {
+						c.Errorln("[panic] passed resp.Time() nil point err")
+						nerCh <- helper.Result{Item: nil, Success: false}
+						return
+					}
+					c.Errorf("api error: %s", err)
+					nerCh <- helper.Result{Item: nil, Success: false}
+					return
+				}
+				if resp.StatusCode() != 200 {
+					c.Errorf("api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
+					nerCh <- helper.Result{Item: nil, Success: false}
+					return
+				}
+
+				requestBlock, validatorsFailedToRespond, status, err := CommonYodaRequestParser(resp.Body())
+				if err != nil {
+					c.Errorf("api error: %s", err)
+					nerCh <- helper.Result{Item: nil, Success: false}
+					return
+				}
+				nerCh <- helper.Result{Success: true, Item: types.RequestStatus{
+					RequestID:                 int64(request),
+					Status:                    status,
+					RequestHeight:             requestBlock,
+					BlocksPassed:              currentBlockHeight - requestBlock,
+					ValidatorsFailedToRespond: validatorsFailedToRespond,
+				}}
+			}(nerCh)
+
+		}
+		// close channel when all go-routines are done
+		go func() {
+			nerWg.Wait()
+			close(nerCh)
+		}()
+
+		for nerResult := range nerCh {
+			if nerResult.Success {
+				if nerResult.Item.(types.RequestStatus).RequestHeight+int64(yodaSlashWindow) < currentBlockHeight {
+					expiredCount++
+					continue
+				} else if nerResult.Item.(types.RequestStatus).BlocksPassed > 0 {
+					nonExpiredResults = append(nonExpiredResults, nerResult.Item.(types.RequestStatus))
+				}
+			}
+		}
+		if expiredCount > 0 {
+			break
+		}
+	}
+	c.Debugf("Found non-expired requests: %d", len(nonExpiredResults))
 
 	// init channel and waitgroup for go-routine
 	ch := make(chan helper.Result)
@@ -146,26 +281,10 @@ func GetYodaStatus(
 		return types.CommonYodaStatus{}, common.ErrFailedHttpRequest
 	}
 
-	// get oracle params by each chain
-	resp, err = requester.Get(CommonYodaParamsPath)
-	if err != nil {
-		c.Errorf("api error: %s", err)
-		return types.CommonYodaStatus{}, common.ErrFailedHttpRequest
-	}
-	if resp.StatusCode() != http.StatusOK {
-		c.Errorf("api error: [%d] %s", resp.StatusCode(), err)
-		return types.CommonYodaStatus{}, common.ErrGotStrangeStatusCode
-	}
-
-	yodaSlashWindow, err := CommonYodaParamsParser(resp.Body())
-	if err != nil {
-		c.Errorf("api error: %s", err)
-		return types.CommonYodaStatus{}, common.ErrFailedJsonUnmarshal
-	}
-
 	return types.CommonYodaStatus{
 		SlashWindow:  yodaSlashWindow,
 		RequestCount: requestCount,
 		Validators:   yodaResults,
+		Requests:     nonExpiredResults,
 	}, nil
 }
