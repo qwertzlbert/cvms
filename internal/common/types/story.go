@@ -29,3 +29,42 @@ type StoryStakingValidator struct {
 		Moniker string `json:"moniker"`
 	} `json:"description"`
 }
+
+var StoryUpgradeQueryPath = "/upgrade/current_plan"
+
+// ref; https://github.com/piplabs/story/blob/main/client/server/upgrade.go#L17
+type StoryUpgradeResponse struct {
+	Code int64 `json:"code"`
+	Msg  struct {
+		Plan struct {
+			Name   string `json:"name"`
+			Time   string `json:"time"`
+			Height string `json:"height"`
+		} `json:"plan"`
+	} `json:"msg"`
+	Error string `json:"error"`
+}
+
+// ref; https://github.com/piplabs/story/blob/main/client/server/slashing.go
+var StorySlashingQueryPath = func(consensusAddress string) string {
+	return fmt.Sprintf("/slashing/signing_infos/%s", consensusAddress)
+}
+
+type StorySlashingResponse struct {
+	Code int64 `json:"code"`
+	Msg  struct {
+		ValidatorSigningInfo SigningInfo `json:"val_signing_info"`
+	} `json:"msg"`
+	Error string `json:"error"`
+}
+
+// ref; https://github.com/piplabs/story/blob/main/client/server/slashing.go
+var StorySlashingParamsQueryPath = "/slashing/params"
+
+type StorySlashingParamsResponse struct {
+	Code int64 `json:"code"`
+	Msg  struct {
+		Params SlashingParam `json:"params"`
+	} `json:"msg"`
+	Error string `json:"error"`
+}

@@ -20,7 +20,7 @@ services:
     volumes:
       - ${CONFIG_PATH:-./config.yaml}:/var/lib/cvms/config.yaml:ro
       - ./docker/cvms/support_chains.yaml:/var/lib/cvms/docker/cvms/support_chains.yaml:ro
-      - ./docker/cvms/custom_chains.yaml:/var/lib/cvms/docker/cvms/custom_chains.yaml:ro
+      - ./docker/cvms/${CUSTOM_CHAINS_FILE:-custom_chains.yaml.example}:/var/lib/cvms/docker/cvms/custom_chains.yaml:ro
     networks:
       - cvms-net
 
@@ -74,7 +74,7 @@ services:
     volumes:
       - ${CONFIG_PATH:-./config.yaml}:/var/lib/cvms/config.yaml:ro
       - ./docker/cvms/support_chains.yaml:/var/lib/cvms/docker/cvms/support_chains.yaml:ro
-      - ./docker/cvms/custom_chains.yaml:/var/lib/cvms/docker/cvms/custom_chains.yaml:ro
+      - ./docker/cvms/${CUSTOM_CHAINS_FILE:-custom_chains.yaml.example}:/var/lib/cvms/docker/cvms/custom_chains.yaml:ro
     networks:
       - cvms-net
     depends_on:

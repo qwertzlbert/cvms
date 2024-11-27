@@ -22,17 +22,23 @@ const (
 	subsystemSleep = 60 * time.Second
 	UnHealthSleep  = 10 * time.Second
 
-	RemainingTimeMetricName = "remaining_time"
+	RemainingTimeMetricName   = "remaining_time"
+	RemainingBlocksMetricName = "remaining_blocks"
 )
 
 func Start(p common.Packager) error {
 	if ok := helper.Contains(types.SupportedProtocolTypes, p.ProtocolType); ok {
-		for _, baseURL := range p.APIs {
-			client := common.NewExporter(p)
-			client.SetAPIEndPoint(baseURL)
-			go loop(client, p)
+		exporter := common.NewExporter(p)
+		// setup endpoints
+		for _, rpc := range p.RPCs {
+			exporter.SetRPCEndPoint(rpc)
 			break
 		}
+		for _, api := range p.APIs {
+			exporter.SetAPIEndPoint(api)
+			break
+		}
+		go loop(exporter, p)
 		return nil
 	}
 	return errors.Errorf("unsupprted chain type: %s", p.ProtocolType)
@@ -43,11 +49,18 @@ func loop(c *common.Exporter, p common.Packager) {
 	packageLabels := common.BuildPackageLabels(p)
 
 	// TODO: active node 개수? -> health package 구현
-
 	remainingUpgradeTimeMetric := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace:   common.Namespace,
 		Subsystem:   Subsystem,
 		Name:        RemainingTimeMetricName,
+		ConstLabels: packageLabels,
+	}, []string{
+		common.UpgradeNameLabel,
+	})
+	RemainingBlocksMetric := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        RemainingBlocksMetricName,
 		ConstLabels: packageLabels,
 	}, []string{
 		common.UpgradeNameLabel,
@@ -97,6 +110,9 @@ func loop(c *common.Exporter, p common.Packager) {
 		remainingUpgradeTimeMetric.
 			With(prometheus.Labels{common.UpgradeNameLabel: status.UpgradeName}).
 			Set(status.RemainingTime)
+		RemainingBlocksMetric.
+			With(prometheus.Labels{common.UpgradeNameLabel: status.UpgradeName}).
+			Set(status.RemainingBlocks)
 
 		c.Infof("updated %s metrics successfully and going to sleep %s ...", Subsystem, subsystemSleep.String())
 

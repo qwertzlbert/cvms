@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/cosmostation/cvms/internal/helper"
+	"github.com/cosmostation/cvms/internal/helper/db"
 	"github.com/cosmostation/cvms/internal/helper/healthcheck"
 
 	"github.com/cosmostation/cvms/internal/common"
@@ -96,6 +97,10 @@ func (veidx *VEIndexer) Start() error {
 		}()
 		// loop partion table time retention by env parameter
 		go func() {
+			if veidx.RetentionPeriod == db.PersistenceMode {
+				veidx.Infoln("skipped the postgres time retention")
+				return
+			}
 			for {
 				veidx.Infof("for time retention, delete old records over %s and sleep %s", veidx.RetentionPeriod, indexertypes.RetentionQuerySleepDuration)
 				veidx.repo.DeleteOldValidatorExtensionVoteList(veidx.ChainID, veidx.RetentionPeriod)

@@ -7,13 +7,13 @@ import (
 	"github.com/cosmostation/cvms/internal/packages/consensus/uptime/types"
 )
 
-func GetStatus(c *common.Exporter, p common.Packager) (types.CommonUptimeStatus, error) {
+func GetStatus(exporter *common.Exporter, p common.Packager) (types.CommonUptimeStatus, error) {
 	switch p.ProtocolType {
 	case "cosmos":
 		if p.IsConsumerChain {
-			return api.GetConsumserUptimeStatus(c, p.ChainID)
+			return api.GetConsumserUptimeStatus(exporter, p.ChainID)
 		}
-		return api.GetUptimeStatus(c)
+		return api.GetUptimeStatus(exporter)
 	default:
 		return types.CommonUptimeStatus{}, common.ErrOutOfSwitchCases
 	}

@@ -48,6 +48,9 @@ func Build(port string, l *logrus.Logger, cfg *config.MonitoringConfig, sc *conf
 		HandleFunc("/", defaultHandleFunction).
 		Methods("GET")
 	router.
+		HandleFunc("/support_chains", supportChainsHandler(*sc)).
+		Methods("GET")
+	router.
 		Handle("/metrics", buildPrometheusHandler(registry, l)).
 		Methods("GET")
 	router.
@@ -70,8 +73,22 @@ func defaultHandleFunction(w http.ResponseWriter, r *http.Request) {
 		<h1>Cosmos Validator Monitoring Service - Exporter</h1>
 		<h3><a href="https://cosmostation.io/">Prod by Cosmostation</a></h3>
 		<p><a href="/metrics">Metrics</a></p>
+		<p><a href="/support_chains">Support Chains</a></p>
 	</body>
 	</html>`))
+}
+
+func supportChainsHandler(sc config.SupportChains) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bz, err := sc.Marshal()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to serialize config: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write(bz)
+	}
 }
 
 func buildPrometheusHandler(registry prometheus.Gatherer, logger promhttp.Logger) http.Handler {

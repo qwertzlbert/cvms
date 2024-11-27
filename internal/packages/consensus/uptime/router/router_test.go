@@ -48,6 +48,17 @@ func TestGetStatus(t *testing.T) {
 				APIs: []string{os.Getenv("TEST_COSMOS_API_ENDPOINT")},
 			},
 		},
+		{
+			testingName:  "Story Chain",
+			chainName:    "story",
+			protocolType: "cosmos",
+			isConsumer:   false,
+			chainID:      "odyssey-0",
+			endpoint: common.Endpoints{
+				RPCs: []string{os.Getenv("TEST_STORY_RPC_ENDPOINT")},
+				APIs: []string{os.Getenv("TEST_STORY_API_ENDPOINT")},
+			},
+		},
 		// {
 		// 	testingName: "Cronos Chain",
 		// 	chainName:   "cronos",
@@ -76,6 +87,7 @@ func TestGetStatus(t *testing.T) {
 			// setup
 			exporter.SetRPCEndPoint(tc.endpoint.RPCs[0])
 			exporter.SetAPIEndPoint(tc.endpoint.APIs[0])
+			exporter.ChainName = tc.chainName
 			// additional setup for ics
 			if tc.isConsumer {
 				optionalClient := common.NewOptionalClient(exporter.Entry)
