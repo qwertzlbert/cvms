@@ -3,7 +3,9 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -189,7 +191,7 @@ func GetYodaStatus(
 				if nerResult.Item.(types.RequestStatus).RequestHeight+int64(yodaSlashWindow) < currentBlockHeight {
 					expiredCount++
 					continue
-				} else if nerResult.Item.(types.RequestStatus).BlocksPassed > 0 {
+				} else if nerResult.Item.(types.RequestStatus).BlocksPassed >= 0 {
 					nonExpiredResults = append(nonExpiredResults, nerResult.Item.(types.RequestStatus))
 				}
 			}
@@ -214,6 +216,16 @@ func GetYodaStatus(
 		validatorOperatorAddress := item.OperatorAddress
 		validatorMoniker := item.Description.Moniker
 		queryPath := strings.Replace(CommonYodaQueryPath, "{validator_address}", validatorOperatorAddress, -1)
+
+		// map missed requests to validator
+		var maxMisses float64 = 0
+		validatorFailedRequests := make([]types.RequestStatus, 0)
+		for _, request := range nonExpiredResults {
+			if slices.Contains(request.ValidatorsFailedToRespond, item.OperatorAddress) {
+				maxMisses = math.Max(maxMisses, float64(request.BlocksPassed))
+				validatorFailedRequests = append(validatorFailedRequests, request)
+			}
+		}
 
 		// start go-routine
 		go func(ch chan helper.Result) {
@@ -245,7 +257,6 @@ func GetYodaStatus(
 			}
 
 			maxMisses := float64(0)
-			totalMisses := float64(0)
 
 			ch <- helper.Result{
 				Success: true,
@@ -254,7 +265,7 @@ func GetYodaStatus(
 					ValidatorOperatorAddress: validatorOperatorAddress,
 					Moniker:                  validatorMoniker,
 					MaxMisses:                maxMisses,
-					TotalMisses:              totalMisses,
+					Requests:                 validatorFailedRequests,
 				}}
 		}(ch)
 		time.Sleep(10 * time.Millisecond)
@@ -285,6 +296,5 @@ func GetYodaStatus(
 		SlashWindow:  yodaSlashWindow,
 		RequestCount: requestCount,
 		Validators:   yodaResults,
-		Requests:     nonExpiredResults,
 	}, nil
 }

@@ -31,7 +31,6 @@ type CommonYodaStatus struct {
 	SlashWindow  float64 `json:"slash_window"`
 	RequestCount float64 `json:"request_count"`
 	Validators   []ValidatorStatus
-	Requests     []RequestStatus
 }
 
 type ValidatorStatus struct {
@@ -39,7 +38,7 @@ type ValidatorStatus struct {
 	ValidatorOperatorAddress string  `json:"validator_operator_address"`
 	IsActive                 float64 `json:"is_active"`
 	MaxMisses                float64 `json:"max_misses"`
-	TotalMisses              float64 `json:"total_misses"`
+	Requests                 []RequestStatus
 }
 
 type CommonValidatorsQueryResponse struct {
@@ -100,4 +99,9 @@ type RequestStatus struct {
 	RequestHeight             int64    `json:"request_height"`
 	BlocksPassed              int64    `json:"blocks_passed"`
 	ValidatorsFailedToRespond []string `json:"validators_failed_to_respond"` // list of validator addresses
+}
+
+type MissedRequests struct {
+	Validator ValidatorStatus
+	Request   RequestStatus
 }
