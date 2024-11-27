@@ -219,10 +219,32 @@ We provide basic dashboards for easy use by developers. 👉 [Check here!](/./do
 - **cvms_yoda_status** (by validator): This value represents the on-off status for Yoda.
   - **Default labels**: chain, chain_id, mainnet, package
   - **Package-specific labels**: moniker
+- **cvms_yoda_max_miss_counter** (by validator): This value represents the maximum response
+delay in currently active requests assigned to the oracle
+  - **Default labels**: chain, chain_id, mainnet, package
+  - **Package-specific labels**: moniker
+- **cvms_yoda_miss_summary** (by network): Summarizes all response delays for all
+current requests across all validators into percentiles
+  - **Default labels**: chain, chain_id, mainnet, package
+- **cvms_yoda_request_count** (by network): Total Number of all requests on the network so far
+  - **Default labels**: chain, chain_id, mainnet, package
+- **cvms_yoda_slash_window** (by network): Maximum number of blocks a yoda oracle has time to
+respond if a request was assigned to it
+  - **Default labels**: chain, chain_id, mainnet, package
+- **cvms_yoda_validator_miss_summary** (per validator):  Summarizes all response delays for all
+current requests into percentiles seperated by validator
+  - **Default labels**: chain, chain_id, mainnet, package
+  - **Package-specific labels**: moniker
+
 
 | **Metric**       | **Example**                                                                                                                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | cvms_yoda_status | `cvms_yoda_status{chain="band",chain_id="band-laozi-testnet6",mainnet="false",moniker="Cosmostation",package="yoda",table_chain_id="band_laozi_testnet6",validator_operator_address="bandvaloper1kfj48adjsnrgu83lau6wc646q2uf65rf84tzus"} 1` |
+| cvms_yoda_max_miss_counter | `cvms_yoda_max_miss_counter{chain="band",chain_id="laozi-mainnet",mainnet="true",moniker="figment",package="yoda",table_chain_id="laozi_mainnet",validator_operator_address="bandvaloper1zm5p8gg3ugjcdwz9yrxaf6fdptxa4gw04rplr9"} 0` |
+| cvms_yoda_miss_summary | `cvms_yoda_miss_summary{chain="band",chain_id="laozi-mainnet",mainnet="true",package="yoda",table_chain_id="laozi_mainnet",quantile="0.99"} 2` `cvms_yoda_miss_summary_sum{chain="band",chain_id="laozi-mainnet",mainnet="true",package="yoda",table_chain_id="laozi_mainnet"} 94` `cvms_yoda_miss_summary_count{chain="band",chain_id="laozi-mainnet",mainnet="true",package="yoda",table_chain_id="laozi_mainnet"} 261` |
+| cvms_yoda_request_count | `cvms_yoda_request_count{chain="band",chain_id="laozi-mainnet",mainnet="true",package="yoda",table_chain_id="laozi_mainnet"} 2.4417307e+07` |
+| cvms_yoda_slash_window | `cvms_yoda_slash_window{chain="band",chain_id="laozi-mainnet",mainnet="true",package="yoda",table_chain_id="laozi_mainnet"} 100` |
+| cvms_yoda_validator_miss_summary | `cvms_yoda_validator_miss_summary{chain="band",chain_id="laozi-mainnet",mainnet="true",moniker="figment",package="yoda",table_chain_id="laozi_mainnet",validator_operator_address="bandvaloper1zm5p8gg3ugjcdwz9yrxaf6fdptxa4gw04rplr9",quantile="0.99"} 1` `cvms_yoda_validator_miss_summary_sum{chain="band",chain_id="laozi-mainnet",mainnet="true",moniker="figment",package="yoda",table_chain_id="laozi_mainnet",validator_operator_address="bandvaloper1zm5p8gg3ugjcdwz9yrxaf6fdptxa4gw04rplr9"} 4` `cvms_yoda_validator_miss_summary_count{chain="band",chain_id="laozi-mainnet",mainnet="true",moniker="figment",package="yoda",table_chain_id="laozi_mainnet",validator_operator_address="bandvaloper1zm5p8gg3ugjcdwz9yrxaf6fdptxa4gw04rplr9"} 15` |
 
 #### Axelar-EVM Package Metrics
 
