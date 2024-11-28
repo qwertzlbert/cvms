@@ -256,8 +256,6 @@ func GetYodaStatus(
 				return
 			}
 
-			maxMisses := float64(0)
-
 			ch <- helper.Result{
 				Success: true,
 				Item: types.ValidatorStatus{
