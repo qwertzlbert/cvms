@@ -22,6 +22,7 @@ type ChainConfig struct {
 	TrackingAddresses []string       `yaml:"tracking_addresses,omitempty"`
 	Nodes             []NodeEndPoint `yaml:"nodes"`
 	ProviderNodes     []NodeEndPoint `yaml:"provider_nodes"`
+	Monikers          []string       `yaml:"monikers,omitempty"`
 }
 
 // each chain's available node list
