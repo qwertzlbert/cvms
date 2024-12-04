@@ -789,7 +789,7 @@ mocha-4-bridge:
   support_asset:
   packages:
     - block
-namada-dryrun.abaaeaf7b78cb3ac:
+namada.5f5de2dd1b88cba30586420:
   chain_name: namada
   protocol_type: cosmos
   mainnet: true
