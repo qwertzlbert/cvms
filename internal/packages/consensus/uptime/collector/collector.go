@@ -161,7 +161,6 @@ func loop(exporter *common.Exporter, p common.Packager) {
 			// update metrics by each validators
 			for _, item := range status.Validators {
 				if ok := helper.Contains(p.Monikers, item.Moniker); ok {
-					exporter.Debugf("Moniker used: %s", item.Moniker)
 					uptimeMetric.
 						With(prometheus.Labels{
 							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
