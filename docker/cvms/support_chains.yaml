@@ -757,6 +757,18 @@ mantra-hongbai-1:
     - upgrade
     - uptime
     - voteindexer
+milkyway:
+  chain_name: milkyway
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: umilk
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 mocha-4:
   chain_name: celestia
   protocol_type: cosmos
@@ -777,7 +789,7 @@ mocha-4-bridge:
   support_asset:
   packages:
     - block
-namada-dryrun.abaaeaf7b78cb3ac:
+namada.5f5de2dd1b88cba30586420:
   chain_name: namada
   protocol_type: cosmos
   mainnet: true
@@ -1241,6 +1253,18 @@ union-testnet-8:
   mainnet: false
   support_asset:
     denom: muno
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+xion-mainnet-1:
+  chain_name: xion
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: uxion
     decimal: 6
   packages:
     - block
