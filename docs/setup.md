@@ -8,7 +8,7 @@
 
 ## Example: Setup
 
-Copy the `.env` file if you need to cutomize service ports, log-level, prometheus.yaml or other configurations.
+Copy the `.env` file if you need to customize service ports, log-level, prometheus.yaml or other configurations.
 
 ### Setup
 
@@ -52,7 +52,7 @@ chains:
     tracking_addresses:
       - 'cosmos1clpqr4nrk4khgkxj78fcwwh6dl3uw4ep4tgu9q'
     nodes:
-      # NOTE: currently grpc endpoint doens't support ssl
+      # NOTE: currently grpc endpoint doesn't support ssl
       - rpc: 'https://rpc-cosmos.endpoint.xyz'
         api: 'https://lcd-cosmos.endpoint.xyz'
         grpc: 'grpc-cosmos.endpoint.xyz:9090'
@@ -128,7 +128,7 @@ chains:
     tracking_addresses:
       - 'cosmos1clpqr4nrk4khgkxj78fcwwh6dl3uw4ep4tgu9q'
     nodes:
-      # NOTE: currently grpc endpoint doens't support ssl
+      # NOTE: currently grpc endpoint doesn't support ssl
       - rpc: 'https://rpc-cosmos.endpoint.xyz'
         api: 'https://lcd-cosmos.endpoint.xyz'
         grpc: 'grpc-cosmos.endpoint.xyz:9090'

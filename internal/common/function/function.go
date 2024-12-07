@@ -20,7 +20,7 @@ func MakeValidatorInfoList(
 ) ([]indexermodel.ValidatorInfo, error) {
 	switch true {
 	case chainName == "bera":
-		// berachain doens't have staking module, so we need to make custom validator info list for bera
+		// berachain doesn't have staking module, so we need to make custom validator info list for bera
 		// stakingValidators, err := api.GetValidators(commonClient, chainName)
 		newStakingValidatorMap := make(map[string]types.StakingValidatorMetaInfo)
 		validators, err := api.GetValidators(app.CommonClient)
