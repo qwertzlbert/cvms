@@ -1210,18 +1210,6 @@ test-core-2:
     - upgrade
     - uptime
     - voteindexer
-theta-testnet-001:
-  chain_name: cosmos
-  protocol_type: cosmos
-  mainnet: false
-  support_asset:
-    denom: uatom
-    decimal: 6
-  packages:
-    - block
-    - upgrade
-    - uptime
-    - voteindexer
 umee-1:
   chain_name: umee
   protocol_type: cosmos
