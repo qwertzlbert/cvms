@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"math"
 	"net/http"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/helper"
+	balanceErrors "github.com/cosmostation/cvms/internal/packages/utility/balance/errors"
 	"github.com/cosmostation/cvms/internal/packages/utility/balance/types"
 	"github.com/go-resty/resty/v2"
 )
@@ -74,7 +76,11 @@ func GetBalanceStatus(
 			}
 
 			remainingBalance, err := CommonBalanceParser(resp.Body(), BalanceDenom)
-			if err != nil {
+			// catch expected error when balance is not found and assuming balance as 0
+			if errors.Is(err, balanceErrors.ErrBalanceNotFound) {
+				c.Warningf("Balance not found for %s and denom %s, assuming balance as 0", address, BalanceDenom)
+				remainingBalance = 0.0
+			} else if err != nil {
 				c.Errorf("api error: %s", err)
 				ch <- helper.Result{Item: nil, Success: false}
 				return
