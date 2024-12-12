@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/cosmostation/cvms/internal/helper"
+	balanceErrors "github.com/cosmostation/cvms/internal/packages/utility/balance/errors"
 	"github.com/cosmostation/cvms/internal/packages/utility/balance/types"
 )
 
@@ -25,7 +26,7 @@ func CosmosBalanceParser(resp []byte, denom string) (float64, error) {
 	}
 
 	if stringBalance == "" {
-		return 0, fmt.Errorf("failed to get specific denom balnce")
+		return 0, balanceErrors.ErrBalanceNotFound
 	}
 
 	balance, err := strconv.ParseFloat(stringBalance, 64)
