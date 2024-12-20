@@ -440,6 +440,18 @@ evmos_9001-2:
     - upgrade
     - uptime
     - voteindexer
+elys-1:
+  chain_name: elys
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: uelys
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 fetchhub-4:
   chain_name: fetchai
   protocol_type: cosmos
