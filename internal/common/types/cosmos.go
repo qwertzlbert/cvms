@@ -223,9 +223,7 @@ type ConsumerChain struct {
 var (
 	CosmosSlashingLimitQueryPath  string = "/cosmos/slashing/v1beta1/signing_infos?pagination.limit=1"
 	CosmosSlashingParamsQueryPath string = "/cosmos/slashing/v1beta1/params"
-	CosmosSlashingQueryPath              = func(consensusAddress string) string {
-		return fmt.Sprintf("/cosmos/slashing/v1beta1/signing_infos/%s", consensusAddress)
-	}
+	CosmosSlashingQueryPath              = "/cosmos/slashing/v1beta1/signing_infos/{consensus_address}"
 )
 
 type CosmosSlashingResponse struct {

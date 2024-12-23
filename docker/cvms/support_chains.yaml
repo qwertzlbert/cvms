@@ -1181,7 +1181,7 @@ stride-1:
   chain_name: stride
   protocol_type: cosmos
   mainnet: true
-  consumer: true
+  consumer: false
   support_asset:
     denom: ustrd
     decimal: 6

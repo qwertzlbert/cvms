@@ -173,7 +173,7 @@ func GetStakingValidators(c common.CommonClient, chainName string, status ...str
 	}
 
 	// logging total validators count
-	// c.Debugf("total cosmos staking validators: %d", len(stakingValidators))
+	c.Debugf("total cosmos staking validators: %d", len(stakingValidators))
 	return stakingValidators, nil
 }
 

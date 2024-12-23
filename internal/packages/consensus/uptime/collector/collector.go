@@ -39,6 +39,11 @@ func Start(p common.Packager) error {
 			break
 		}
 
+		for _, grpc := range p.GRPCs {
+			exporter.SetGRPCEndPoint(grpc)
+			break
+		}
+
 		if p.IsConsumerChain {
 			exporter.OptionalClient = common.NewOptionalClient(exporter.Entry)
 			for _, rpc := range p.ProviderEndPoints.RPCs {
