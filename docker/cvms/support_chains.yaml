@@ -165,6 +165,18 @@ bartio-beacon-80084:
     # TODO ref; https://github.com/berachain/beacon-kit/blob/main/mod/node-api/handlers/beacon/routes.go
     # - upgrade
     # - uptime
+bbn-test-5:
+  chain_name: babylon
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: ubbn
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 bitcanna-1:
   chain_name: bitcanna
   protocol_type: cosmos
