@@ -27,6 +27,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require github.com/jarcoal/httpmock v1.3.1
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect

@@ -1,58 +1,48 @@
 package api_test
 
+// Import the necessary packages
 import (
-	"bytes"
-	"context"
+	"encoding/json"
 	"io"
-	"net/http"
 	"testing"
 
 	"github.com/cosmostation/cvms/internal/common"
 	commontypes "github.com/cosmostation/cvms/internal/common/types"
+	"github.com/cosmostation/cvms/internal/helper/logger"
 	"github.com/cosmostation/cvms/internal/packages/consensus/uptime/api"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+
+	"github.com/jarcoal/httpmock"
 )
 
-// Mock implementation for Resty request
-type MockRestyRequest struct {
-	mock.Mock
-}
-
-func (r *MockRestyRequest) SetContext(ctx context.Context) *resty.Request {
-	r.Called(ctx)
-	return &resty.Request{}
-}
-
-func (r *MockRestyRequest) Get(url string) (*resty.Response, error) {
-	args := r.Called(url)
-	return args.Get(0).(*resty.Response), args.Error(1)
-}
-
-// Mock implementation for Resty client
-type MockRestyClient struct {
-	mock.Mock
-}
-
-func (c *MockRestyClient) R() *resty.Client {
-	args := c.Called()
-	return args.Get(0).(*resty.Client)
-}
-
+// Test the GetValidatorUptimeStatus function
 func TestGetValidatorUptimeStatus(t *testing.T) {
 
-	validResponse := []byte(`{
-		"val_signing_info": {
-			"address": "asdf",
-			"start_height": "4616678",
-			"index_offset": "9554563",
-			"jailed_until": "1970-01-01T00:00:00Z",
-			"tombstoned": false,
-			"missed_blocks_counter": "904"
-		}
-	}`)
+	client := resty.New()
+	client.SetBaseURL("https://127.0.0.1")
+	httpmock.ActivateNonDefault(client.GetClient())
+	t.Cleanup(httpmock.DeactivateAndReset)
+	l := logger.GetTestLogger()
+	restyLogger := logrus.New()
+	restyLogger.Out = io.Discard
+	entry := l.WithField("mode", "test")
+	commonClient := common.CommonClient{
+		RPCClient:  client,
+		APIClient:  client,
+		GRPCClient: client,
+		Entry:      entry,
+	}
+	commonApp := common.CommonApp{
+		CommonClient:   commonClient,
+		EndPoint:       "https://127.0.0.1",
+		OptionalClient: common.CommonClient{},
+	}
+
+	mockQueryParser := func(resp []byte) (string, float64, float64, float64, error) {
+		return "mockaddress1", 0, 0, 10, nil
+	}
 
 	stakingValidators := []commontypes.CosmosStakingValidator{
 		{
@@ -63,7 +53,6 @@ func TestGetValidatorUptimeStatus(t *testing.T) {
 			}{"validator1"},
 		},
 	}
-
 	consensusValidators := []commontypes.CosmosValidator{
 		{
 			Address: "mockaddress1",
@@ -76,42 +65,26 @@ func TestGetValidatorUptimeStatus(t *testing.T) {
 		},
 	}
 
-	mockAPIClient := new(MockRestyClient)
-	mockRequest := new(MockRestyRequest)
+	// Mock the response for the uptime endpoint; Value does not matter for this test
+	// as result will be set by the mock query parser
+	responder, _ := httpmock.NewJsonResponder(200, json.RawMessage(`{
+		"asdf": {}
+	}`))
+	fakeUrl := "https://127.0.0.1/uptime"
+	httpmock.RegisterResponder("GET", fakeUrl, responder)
 
-	mockAPIClient.On("R").Return(mockRequest)
-	mockRequest.On("SetContext", mock.Anything).Return(mockRequest)
-	mockRequest.On("Get", mock.Anything).Return(&resty.Response{
-		RawResponse: &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewReader(validResponse))},
-	}, nil)
+	result, err := api.GetValidatorUptimeStatus(commonApp, "/uptime", mockQueryParser, consensusValidators, stakingValidators)
 
-	// Setup CommonClient and CommonApp
-	mockLogger := logrus.NewEntry(logrus.New())
-	mockCommonClient := common.CommonClient{
-		APIClient: mockAPIClient,
-		Entry:     mockLogger,
-	}
-	mockCommonApp := common.CommonApp{
-		CommonClient: mockCommonClient,
-		EndPoint:     "http://example.com",
-	}
+	callcount := httpmock.GetTotalCallCount()
 
-	// Mock query parser
-	mockQueryParser := func(resp []byte) (string, float64, float64, float64, error) {
-		return "mockaddress1", 0, 0, 10, nil
-	}
-
-	// Call the function
-	result, err := api.GetValidatorUptimeStatus(
-		mockCommonApp,
-		"/path/to/query/{consensus_address}",
-		mockQueryParser,
-		consensusValidators,
-		stakingValidators,
-	)
 	assert.NoError(t, err)
+	assert.Equal(t, callcount, 1)
 	assert.Len(t, result, 1)
+	// from consensus validators
+	assert.Equal(t, result[0].Moniker, "validator1")
+	// from mockQueryParser
+	assert.Equal(t, result[0].MissedBlockCounter, float64(10))
+	// from staking validators
+	assert.Equal(t, result[0].ValidatorOperatorAddress, "cosmosvaloper1exampleaddress")
 
 }
