@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
-	commonparser "github.com/cosmostation/cvms/internal/common/parser"
 	commontypes "github.com/cosmostation/cvms/internal/common/types"
 	"github.com/cosmostation/cvms/internal/helper"
 	sdkhelper "github.com/cosmostation/cvms/internal/helper/sdk"
@@ -144,30 +143,22 @@ func GetValidatorUptimeStatus(
 	return validatorResult, nil
 }
 
-func GetUptimeParams(c common.CommonClient, chainName string) (
+func GetUptimeParams(c common.CommonApp,
+	CommonUptimeParamsQueryPath string,
+	CommonUptimeParamsQueryParser func(resp []byte) (
+		signedBlocksWindow float64,
+		minSignedPerWindow float64,
+		err error)) (
 	/* signed blocks window */ float64,
 	/* minimum signed per window */ float64,
 	/* unexpected error */ error,
 ) {
-	var (
-		queryPath string
-		parser    func(resp []byte) (signedBlocksWindow float64, minSignedPerWindow float64, err error)
-	)
-
-	switch chainName {
-	case "story":
-		queryPath = commontypes.StorySlashingParamsQueryPath
-		parser = commonparser.StorySlashingParamsParser
-	default:
-		queryPath = commontypes.CosmosSlashingParamsQueryPath
-		parser = commonparser.CosmosSlashingParamsParser
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
 	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(queryPath)
+	resp, err := requester.Get(CommonUptimeParamsQueryPath)
 	if err != nil {
 		return 0, 0, errors.Cause(err)
 	}
@@ -175,7 +166,7 @@ func GetUptimeParams(c common.CommonClient, chainName string) (
 		return 0, 0, errors.Errorf("api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
 	}
 
-	signedBlocksWindow, minSignedPerWindow, err := parser(resp.Body())
+	signedBlocksWindow, minSignedPerWindow, err := CommonUptimeParamsQueryParser(resp.Body())
 	if err != nil {
 		return 0, 0, errors.Cause(err)
 	}

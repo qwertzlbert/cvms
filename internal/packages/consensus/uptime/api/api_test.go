@@ -46,21 +46,29 @@ func TestGetUptimeParams(t *testing.T) {
 	httpmock.ActivateNonDefault(commonApp.APIClient.GetClient())
 	t.Cleanup(httpmock.DeactivateAndReset)
 
-	// mock the response of the uptime params endpoint
+	// mock the response of the uptime params endpoint; Value does not matter for this test
+	// as result will be set by the mock query parser
 	responder, _ := httpmock.NewJsonResponder(200, json.RawMessage(`{
     	"params": {
-    	    "signed_blocks_window": "30000",
-        	"min_signed_per_window": "0.050000000000000000",
+    	    "signed_blocks_window": "123",
+        	"min_signed_per_window": "0.010000000000000000",
         	"downtime_jail_duration": "60s",
-        	"slash_fraction_double_sign": "0.050000000000000000",
+        	"slash_fraction_double_sign": "0.060000000000000000",
         	"slash_fraction_downtime": "0.000100000000000000"
     	}
 	}`))
 
+	mockParamsParser := func(resp []byte) (float64, float64, error) {
+		return 30000, 0.05, nil
+	}
+
 	fakeUrl := "https://127.0.0.1/cosmos/slashing/v1beta1/params"
 	httpmock.RegisterResponder("GET", fakeUrl, responder)
 
-	blocksWindow, minSignedBlocks, err := api.GetUptimeParams(commonApp.CommonClient, "qwertz")
+	blocksWindow, minSignedBlocks, err := api.GetUptimeParams(
+		commonApp,
+		"/cosmos/slashing/v1beta1/params",
+		mockParamsParser)
 
 	callcount := httpmock.GetTotalCallCount()
 
