@@ -17,13 +17,10 @@ import (
 	"github.com/jarcoal/httpmock"
 )
 
-// Test the GetValidatorUptimeStatus function
-func TestGetValidatorUptimeStatus(t *testing.T) {
+func setupCommonAppClient() common.CommonApp {
 
 	client := resty.New()
 	client.SetBaseURL("https://127.0.0.1")
-	httpmock.ActivateNonDefault(client.GetClient())
-	t.Cleanup(httpmock.DeactivateAndReset)
 	l := logger.GetTestLogger()
 	restyLogger := logrus.New()
 	restyLogger.Out = io.Discard
@@ -39,6 +36,47 @@ func TestGetValidatorUptimeStatus(t *testing.T) {
 		EndPoint:       "https://127.0.0.1",
 		OptionalClient: common.CommonClient{},
 	}
+
+	return commonApp
+}
+
+func TestGetUptimeParams(t *testing.T) {
+
+	commonApp := setupCommonAppClient()
+	httpmock.ActivateNonDefault(commonApp.APIClient.GetClient())
+	t.Cleanup(httpmock.DeactivateAndReset)
+
+	// mock the response of the uptime params endpoint
+	responder, _ := httpmock.NewJsonResponder(200, json.RawMessage(`{
+    	"params": {
+    	    "signed_blocks_window": "30000",
+        	"min_signed_per_window": "0.050000000000000000",
+        	"downtime_jail_duration": "60s",
+        	"slash_fraction_double_sign": "0.050000000000000000",
+        	"slash_fraction_downtime": "0.000100000000000000"
+    	}
+	}`))
+
+	fakeUrl := "https://127.0.0.1/cosmos/slashing/v1beta1/params"
+	httpmock.RegisterResponder("GET", fakeUrl, responder)
+
+	blocksWindow, minSignedBlocks, err := api.GetUptimeParams(commonApp.CommonClient, "qwertz")
+
+	callcount := httpmock.GetTotalCallCount()
+
+	assert.Equal(t, 1, callcount)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(30000), blocksWindow)
+	assert.Equal(t, float64(0.05), minSignedBlocks)
+
+}
+
+// Test the GetValidatorUptimeStatus function
+func TestGetValidatorUptimeStatus(t *testing.T) {
+
+	commonApp := setupCommonAppClient()
+	httpmock.ActivateNonDefault(commonApp.APIClient.GetClient())
+	t.Cleanup(httpmock.DeactivateAndReset)
 
 	mockQueryParser := func(resp []byte) (string, float64, float64, float64, error) {
 		return "mockaddress1", 0, 0, 10, nil
