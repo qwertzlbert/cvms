@@ -38,7 +38,6 @@ func Start(p common.Packager) error {
 			exporter.SetAPIEndPoint(api)
 			break
 		}
-
 		for _, grpc := range p.GRPCs {
 			exporter.SetGRPCEndPoint(grpc)
 			break

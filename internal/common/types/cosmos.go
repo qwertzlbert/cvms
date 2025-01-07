@@ -144,6 +144,9 @@ type CosmosValidators struct {
 	BlockHeight string            `json:"block_height"`
 	Validators  []CosmosValidator `json:"validators"`
 	Total       string            `json:"total"`
+	Pagination  struct {
+		Total string `json:"total,omitempty"`
+	} `json:"pagination,omitempty"`
 }
 
 // cosmos chain's validator type
@@ -155,6 +158,28 @@ type CosmosValidator struct {
 	} `json:"pub_key"`
 	VotingPower      string `json:"voting_power"`
 	ProposerPriority string `json:"proposer_priority"`
+}
+
+// Protobuf response field names differ from REST API JSON fields
+// This types can be used to unmarshal the protobuf JSON and
+// later cast it to CosmosValidator types
+type CosmosValidatorsGCP struct {
+	BlockHeight string               `json:"blockHeight"`
+	Validators  []CosmosValidatorGCP `json:"validators"`
+	Total       string               `json:"total"`
+	Pagination  struct {
+		Total string `json:"total,omitempty"`
+	} `json:"pagination,omitempty"`
+}
+
+type CosmosValidatorGCP struct {
+	Address string `json:"address"`
+	Pubkey  struct {
+		Type  string `json:"@type"`
+		Value string `json:"key"`
+	} `json:"pubKey"`
+	VotingPower      string `json:"votingPower"`
+	ProposerPriority string `json:"proposerPriority"`
 }
 
 // staking module
@@ -264,3 +289,7 @@ type CosmosUpgradeResponse struct {
 		UpgradedClientState string `json:"upgraded_client_state"`
 	} `json:"plan"`
 }
+
+var (
+	CommonValidatorConsGrpcQueryPath = "cosmos.base.tendermint.v1beta1.Service.GetLatestValidatorSet"
+)

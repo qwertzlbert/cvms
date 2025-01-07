@@ -1,38 +1,33 @@
 package grpchelper
 
 import (
-	"fmt"
-	"reflect"
 	"strings"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+
+	// Below are necessary imports for the cosmos SDK types
+	// Otherwise we would have to manually import the relevant SDK types
+	_ "cosmossdk.io/api/cosmos/crypto/ed25519"
+	_ "cosmossdk.io/api/cosmos/crypto/secp256k1"
 )
 
-type DynamicAnyResolver struct {
-	jsonpb.AnyResolver // https://godoc.org/github.com/golang/protobuf/jsonpb#AnyResolver
+type CosmosAnyMessageResolver struct {
+	protoregistry.MessageTypeResolver
+	protoregistry.ExtensionTypeResolver
 }
 
-// Resolve implements jsonpb.AnyResolver.Resolve
-func (DynamicAnyResolver) Resolve(typeURL string) (proto.Message, error) {
-	msg, err := defaultResolveAny(typeURL)
-	if err == nil {
-		return msg, nil
-	}
-	return &empty.Empty{}, nil
-}
-
-// copied from https://github.com/golang/protobuf/blob/c823c79ea1570fb5ff454033735a8e68575d1d0f/jsonpb/jsonpb.go#L92-L103
-func defaultResolveAny(typeURL string) (proto.Message, error) {
+func (r CosmosAnyMessageResolver) FindMessageByURL(typeURL string) (protoreflect.MessageType, error) {
 	// Only the part of typeUrl after the last slash is relevant.
 	mname := typeURL
 	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
 		mname = mname[slash+1:]
 	}
-	mt := proto.MessageType(mname)
-	if mt == nil {
-		return nil, fmt.Errorf("unknown message type %q", mname)
+
+	a, err := protoregistry.GlobalTypes.FindMessageByURL(mname)
+	if err != nil {
+		return nil, err
 	}
-	return reflect.New(mt.Elem()).Interface().(proto.Message), nil
+
+	return a, nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/types"
+	sdkhelper "github.com/cosmostation/cvms/internal/helper/sdk"
 	"github.com/pkg/errors"
 )
 
@@ -120,7 +121,6 @@ func CosmosValidatorParser(resp []byte) ([]types.CosmosValidator, int64, error) 
 	if err != nil {
 		return []types.CosmosValidator{}, 0, err
 	}
-
 	if len(validators.Result.Validators) == 0 {
 		var validators types.CosmosV37ValidatorResponse
 		err := json.Unmarshal(resp, &validators)
@@ -128,20 +128,69 @@ func CosmosValidatorParser(resp []byte) ([]types.CosmosValidator, int64, error) 
 			return []types.CosmosValidator{}, 0, err
 		}
 
-		totalValidatorsCount, err := strconv.ParseInt(validators.Total, 10, 64)
+		var count string
+		if validators.Total != "" {
+			count = validators.Total
+		} else {
+			count = validators.Pagination.Total
+		}
+
+		totalValidatorsCount, err := strconv.ParseInt(count, 10, 64)
 		if err != nil {
 			return []types.CosmosValidator{}, 0, err
 		}
 
 		return validators.Validators, totalValidatorsCount, nil
 	} else {
-		totalValidatorsCount, err := strconv.ParseInt(validators.Result.Total, 10, 64)
+		var count string
+		if validators.Result.Total != "" {
+			count = validators.Result.Total
+		} else {
+			count = validators.Result.Pagination.Total
+		}
+		totalValidatorsCount, err := strconv.ParseInt(count, 10, 64)
 		if err != nil {
 			return []types.CosmosValidator{}, 0, err
 		}
 
 		return validators.Result.Validators, totalValidatorsCount, nil
 	}
+}
+
+func CosmosValidatorParserGCP(resp []byte) ([]types.CosmosValidator, int64, error) {
+	validatorsGCP := &types.CosmosValidatorsGCP{}
+	err := json.Unmarshal(resp, validatorsGCP)
+	if err != nil {
+		return []types.CosmosValidator{}, 0, err
+	}
+	var count string
+	if validatorsGCP.Total != "" {
+		count = validatorsGCP.Total
+	} else {
+		count = validatorsGCP.Pagination.Total
+	}
+	totalValidatorsCount, err := strconv.ParseInt(count, 10, 64)
+	if err != nil {
+		return []types.CosmosValidator{}, 0, err
+	}
+
+	validators := make([]types.CosmosValidator, len(validatorsGCP.Validators))
+	for i, v := range validatorsGCP.Validators {
+
+		address, _ := sdkhelper.ProposerAddressFromPublicKey(v.Pubkey.Value)
+
+		validators[i] = types.CosmosValidator{
+			Address: address,
+			Pubkey: struct {
+				Type  string "json:\"type\""
+				Value string "json:\"value\""
+			}(v.Pubkey),
+			VotingPower:      v.VotingPower,
+			ProposerPriority: v.ProposerPriority,
+		}
+	}
+
+	return validators, totalValidatorsCount, nil
 }
 
 func CosmosStakingValidatorParser(resp []byte) ([]types.CosmosStakingValidator, error) {

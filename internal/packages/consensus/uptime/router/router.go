@@ -50,6 +50,29 @@ func GetStatus(exporter *common.Exporter, p common.Packager) (types.CommonUptime
 				commonSlashingParamsQueryPath,
 				commonSlashingParamsQueryParser)
 			return api.GetUptimeStatus(signedBlocksWindow, minSignedPerWindow, validatorUptimeStatus)
+
+		case "stride":
+			commonSlashingValidatorQueryPath = commontypes.CosmosSlashingQueryPath
+			commonSlashingValidatorQueryParser = commonparser.CosmosSlashingParser
+			commonSlashingParamsQueryPath = commontypes.CosmosSlashingParamsQueryPath
+			commonSlashingParamsQueryParser = commonparser.CosmosSlashingParamsParser
+
+			stakingValidators, _ := commonapi.GetStakingValidators(exporter.CommonClient, p.ChainName)
+			consensusValidators, _ := commonapi.GetValidatorsbyGRPC(exporter.CommonClient)
+
+			// exporter.Debugf("consensus validators: %+v", consensusValidators)
+			validatorUptimeStatus, _ := api.GetValidatorUptimeStatus(
+				exporter.CommonApp,
+				commonSlashingValidatorQueryPath,
+				commonSlashingValidatorQueryParser,
+				consensusValidators,
+				stakingValidators)
+			signedBlocksWindow, minSignedPerWindow, _ := api.GetUptimeParams(
+				exporter.CommonApp,
+				commonSlashingParamsQueryPath,
+				commonSlashingParamsQueryParser)
+			return api.GetUptimeStatus(signedBlocksWindow, minSignedPerWindow, validatorUptimeStatus)
+
 		default:
 
 			// if p.IsConsumerChain {

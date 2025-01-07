@@ -120,6 +120,7 @@ func selectPackage(
 		endpoints := common.Endpoints{
 			RPCs: validRPCs, CheckRPC: true,
 			APIs: validAPIs, CheckAPI: true,
+			GRPCs: validGRPCs, CheckGRPC: true,
 		}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {
