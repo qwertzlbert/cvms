@@ -11,10 +11,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func StoryStakingValidatorParser(resp []byte) ([]types.CosmosStakingValidator, error) {
+func StoryStakingValidatorParser(resp []byte) ([]types.CosmosStakingValidator, int64, error) {
 	var result types.StoryStakingValidatorsQueryResponse
 	if err := json.Unmarshal(resp, &result); err != nil {
-		return nil, common.ErrFailedJsonUnmarshal
+		return nil, 0, common.ErrFailedJsonUnmarshal
 	}
 
 	stakingValidatorList := make([]types.CosmosStakingValidator, 0)
@@ -22,7 +22,7 @@ func StoryStakingValidatorParser(resp []byte) ([]types.CosmosStakingValidator, e
 		// const Secp256k1 = "/cosmos.crypto.secp256k1.PubKey"
 		// const TendermintSecp256k1 = "tendermint/PubKeySecp256k1"
 		if validator.ConsensusPubkey.Type != sdkhelper.TendermintSecp256k1 {
-			return nil, errors.New("unexpected key type for story validators")
+			return nil, 0, errors.New("unexpected key type for story validators")
 		}
 
 		stakingValidatorList = append(stakingValidatorList, types.CosmosStakingValidator{
@@ -36,7 +36,12 @@ func StoryStakingValidatorParser(resp []byte) ([]types.CosmosStakingValidator, e
 		})
 	}
 
-	return stakingValidatorList, nil
+	valCount, err := strconv.ParseInt(result.Msg.Pagination.Total, 10, 64)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "failed to convert from stirng to float in parser")
+	}
+
+	return stakingValidatorList, valCount, nil
 }
 
 // story upgrade parser

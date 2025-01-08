@@ -121,5 +121,8 @@ func sliceStakingValidatorByVP(stakingValidators []commontypes.CosmosStakingVali
 		tokensJ, _ := strconv.ParseInt(stakingValidators[j].Tokens, 10, 64)
 		return tokensI > tokensJ // Sort in descending order
 	})
+	if len(stakingValidators) < totalConsensusValidators {
+		return stakingValidators // Not enough validators to slice
+	}
 	return stakingValidators[:totalConsensusValidators]
 }

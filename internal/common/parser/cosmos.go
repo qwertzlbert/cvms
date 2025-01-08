@@ -8,7 +8,6 @@ import (
 
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/types"
-	sdkhelper "github.com/cosmostation/cvms/internal/helper/sdk"
 	"github.com/pkg/errors"
 )
 
@@ -157,48 +156,16 @@ func CosmosValidatorParser(resp []byte) ([]types.CosmosValidator, int64, error) 
 	}
 }
 
-func CosmosValidatorParserGCP(resp []byte) ([]types.CosmosValidator, int64, error) {
-	validatorsGCP := &types.CosmosValidatorsGCP{}
-	err := json.Unmarshal(resp, validatorsGCP)
-	if err != nil {
-		return []types.CosmosValidator{}, 0, err
-	}
-	var count string
-	if validatorsGCP.Total != "" {
-		count = validatorsGCP.Total
-	} else {
-		count = validatorsGCP.Pagination.Total
-	}
-	totalValidatorsCount, err := strconv.ParseInt(count, 10, 64)
-	if err != nil {
-		return []types.CosmosValidator{}, 0, err
-	}
-
-	validators := make([]types.CosmosValidator, len(validatorsGCP.Validators))
-	for i, v := range validatorsGCP.Validators {
-
-		address, _ := sdkhelper.ProposerAddressFromPublicKey(v.Pubkey.Value)
-
-		validators[i] = types.CosmosValidator{
-			Address: address,
-			Pubkey: struct {
-				Type  string "json:\"type\""
-				Value string "json:\"value\""
-			}(v.Pubkey),
-			VotingPower:      v.VotingPower,
-			ProposerPriority: v.ProposerPriority,
-		}
-	}
-
-	return validators, totalValidatorsCount, nil
-}
-
-func CosmosStakingValidatorParser(resp []byte) ([]types.CosmosStakingValidator, error) {
+func CosmosStakingValidatorParser(resp []byte) ([]types.CosmosStakingValidator, int64, error) {
 	var result types.CosmosStakingValidatorsQueryResponse
 	if err := json.Unmarshal(resp, &result); err != nil {
-		return nil, common.ErrFailedJsonUnmarshal
+		return nil, 0, common.ErrFailedJsonUnmarshal
 	}
-	return result.Validators, nil
+	totalValidators, err := strconv.ParseInt(result.Pagination.Total, 10, 64)
+	if err != nil {
+		return nil, 0, err
+	}
+	return result.Validators, totalValidators, nil
 }
 
 // cosmos upgrade parser

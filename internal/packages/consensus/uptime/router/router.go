@@ -58,7 +58,7 @@ func GetStatus(exporter *common.Exporter, p common.Packager) (types.CommonUptime
 			commonSlashingParamsQueryParser = commonparser.CosmosSlashingParamsParser
 
 			stakingValidators, _ := commonapi.GetStakingValidators(exporter.CommonClient, p.ChainName)
-			consensusValidators, _ := commonapi.GetValidatorsbyGRPC(exporter.CommonClient)
+			consensusValidators, _ := commonapi.GetValidators(exporter.CommonClient)
 
 			// exporter.Debugf("consensus validators: %+v", consensusValidators)
 			validatorUptimeStatus, _ := api.GetValidatorUptimeStatus(

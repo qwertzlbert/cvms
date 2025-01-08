@@ -130,51 +130,64 @@ func GetStakingValidators(c common.CommonClient, chainName string, status ...str
 	var (
 		defaultStatus          string = string(types.Bonded)
 		queryPath              string
-		stakingValidatorParser func(resp []byte) ([]types.CosmosStakingValidator, error)
+		stakingValidatorParser func(resp []byte) ([]types.CosmosStakingValidator, int64, error)
 	)
 
 	if len(status) > 0 {
 		defaultStatus = status[0]
 	}
 
-	switch chainName {
-	case "initia":
-		queryPath = types.InitiaStakingValidatorQueryPath(defaultStatus)
-		stakingValidatorParser = parser.InitiaStakingValidatorParser
-	case "story":
-		queryPath = types.StoryStakingValidatorQueryPath(defaultStatus)
-		stakingValidatorParser = parser.StoryStakingValidatorParser
-	default:
-		// NOTE: default query path will be cosmos-sdk staking module path
-		queryPath = types.CosmosStakingValidatorQueryPath(defaultStatus)
-		stakingValidatorParser = parser.CosmosStakingValidatorParser
-	}
-
 	// init context
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
-
 	// create requester
 	requester := c.APIClient.R().SetContext(ctx)
 
-	// get on-chain validators in staking module
-	resp, err := requester.Get(queryPath)
-	if err != nil {
-		// c.Errorf("api error: %s", err)
-		return nil, errors.Wrap(err, "failed in api")
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Errorf("got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
+	totalValidators := make([]types.CosmosStakingValidator, 0)
+	offset := 0
+	maxValidators := 1000 // max total validators
+	for {
+		switch chainName {
+		case "initia":
+			queryPath = types.InitiaStakingValidatorQueryPath(defaultStatus, offset)
+			stakingValidatorParser = parser.InitiaStakingValidatorParser
+		case "story":
+			queryPath = types.StoryStakingValidatorQueryPath(defaultStatus, offset)
+			stakingValidatorParser = parser.StoryStakingValidatorParser
+		default:
+			// NOTE: default query path will be cosmos-sdk staking module path
+			queryPath = types.CosmosStakingValidatorQueryPath(defaultStatus, offset)
+			stakingValidatorParser = parser.CosmosStakingValidatorParser
+		}
 
-	stakingValidators, err := stakingValidatorParser(resp.Body())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed in api")
-	}
+		// get on-chain validators in staking module
+		resp, err := requester.Get(queryPath)
+		if err != nil {
+			// c.Errorf("api error: %s", err)
+			return nil, errors.Wrap(err, "failed in api")
+		}
+		if resp.StatusCode() != http.StatusOK {
+			return nil, errors.Errorf("got %d code from %s", resp.StatusCode(), resp.Request.URL)
+		}
 
-	// logging total validators count
-	c.Debugf("total cosmos staking validators: %d", len(stakingValidators))
-	return stakingValidators, nil
+		stakingValidators, totalCount, err := stakingValidatorParser(resp.Body())
+		if err != nil {
+			return nil, errors.Wrap(err, "failed in api")
+		}
+
+		totalValidators = append(totalValidators, stakingValidators...)
+		c.Debugf("found cosmos staking validators: %d", len(stakingValidators))
+		// logging total validators count
+		if len(totalValidators) == int(totalCount) {
+
+			return totalValidators, nil
+		}
+
+		offset = len(totalValidators)
+		if len(totalValidators) > maxValidators {
+			return nil, errors.New("failed to find all staking validators in this height")
+		}
+	}
 }
 
 func GetProviderValidators(c common.CommonClient, consumerID string) ([]types.ProviderValidator, error) {

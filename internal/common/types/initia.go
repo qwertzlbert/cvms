@@ -20,6 +20,6 @@ type InitiaStakingValidator struct {
 }
 
 // ref; https://github.com/initia-labs/initia/blob/main/proto/initia/mstaking/v1/query.proto#L14
-var InitiaStakingValidatorQueryPath = func(status string) string {
-	return fmt.Sprintf("/initia/mstaking/v1/validators?status=%s&pagination.count_total=true&pagination.limit=500", status)
+var InitiaStakingValidatorQueryPath = func(status string, offset int) string {
+	return fmt.Sprintf("/initia/mstaking/v1/validators?status=%s&pagination.count_total=true&pagination.limit=500&pageination.offset=%d", status, offset)
 }

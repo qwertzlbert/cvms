@@ -60,8 +60,6 @@ func GetValidatorUptimeStatus(
 			return nil, common.ErrFailedConvertTypes
 		}
 		pubkeysMap[validator.Pubkey.Value] = consensusAddress
-		// c.Debugf("consensusAddress: %s", consensusAddress)
-		// c.Debugf("pubkey: %s", validator.Pubkey.Value)
 	}
 
 	// 4. Sort staking validators by vp
@@ -72,21 +70,7 @@ func GetValidatorUptimeStatus(
 	var wg sync.WaitGroup
 	validatorResult := make([]types.ValidatorUptimeStatus, 0)
 
-	wgLen := 0
-	for _, item := range orderedStakingValidators {
-		if pubkeysMap[item.ConsensusPubkey.Key] != "" {
-			wgLen++
-		}
-	}
-
-	wg.Add(wgLen)
-
-	// c.Debugf("%s", orderedStakingValidators[0].OperatorAddress)
-	// c.Debugf("%s", orderedStakingValidators[0].Description.Moniker)
-	// c.Debugf("%s", orderedStakingValidators[0].ConsensusPubkey.Key)
-	// c.Debugf("%s", consensusValidators[0].Address)
-	// c.Debugf("%s", pubkeysMap[consensusValidators[0].Pubkey.Value])
-	// c.Debugf("length orderedStakingValidators: %d", len(orderedStakingValidators))
+	wg.Add(len(orderedStakingValidators))
 
 	for _, item := range orderedStakingValidators {
 		// set query path
@@ -96,52 +80,42 @@ func GetValidatorUptimeStatus(
 		consensusAddress := pubkeysMap[item.ConsensusPubkey.Key]
 		queryPath := strings.Replace(CommonUptimeSlashingQueryPath, "{consensus_address}", consensusAddress, -1)
 
-		// c.Debugf("proposerAddress: %s", proposerAddress)
-		// c.Debugf("consensusAddress: %s", consensusAddress)
-		// c.Debugf("validatorOperatorAddress: %s", validatorOperatorAddress)
-		// c.Debugf("moniker: %s", moniker)
-		// c.Debugf("queryPath: %s", queryPath)
-		if consensusAddress != "" {
-			go func(ch chan helper.Result) {
-				defer helper.HandleOutOfNilResponse(c.Entry)
-				defer wg.Done()
-
-				resp, err := requester.Get(queryPath)
-				if err != nil {
-					if resp == nil {
-						ch <- helper.Result{Item: nil, Success: false}
-						return
-					}
-					// c.Errorf("errors: %s", err)
+		go func(ch chan helper.Result) {
+			defer helper.HandleOutOfNilResponse(c.Entry)
+			defer wg.Done()
+			resp, err := requester.Get(queryPath)
+			if err != nil {
+				if resp == nil {
 					ch <- helper.Result{Item: nil, Success: false}
 					return
 				}
-				if resp.StatusCode() != http.StatusOK {
-					ch <- helper.Result{Item: nil, Success: false}
-					return
-				}
+				// c.Errorf("errors: %s", err)
+				ch <- helper.Result{Item: nil, Success: false}
+				return
+			}
+			if resp.StatusCode() != http.StatusOK {
+				ch <- helper.Result{Item: nil, Success: false}
+				return
+			}
 
-				_, _, isTomstoned, missedBlocksCounter, err := CommonUptimeSlashingQueryParser(resp.Body())
-				if err != nil {
-					c.Errorf("errors: %s", err)
-					ch <- helper.Result{Item: nil, Success: false}
-					return
-				}
-				c.Debugf("missed blocks counter: %f", missedBlocksCounter)
-				c.Debugf("moniker: %s", moniker)
+			_, _, isTomstoned, missedBlocksCounter, err := CommonUptimeSlashingQueryParser(resp.Body())
+			if err != nil {
+				c.Errorf("errors: %s", err)
+				ch <- helper.Result{Item: nil, Success: false}
+				return
+			}
+			ch <- helper.Result{
+				Success: true,
+				Item: types.ValidatorUptimeStatus{
+					Moniker:                   moniker,
+					ProposerAddress:           proposerAddress,
+					ValidatorConsensusAddress: consensusAddress,
+					MissedBlockCounter:        missedBlocksCounter,
+					IsTomstoned:               isTomstoned,
+					ValidatorOperatorAddress:  validatorOperatorAddress,
+				}}
+		}(ch)
 
-				ch <- helper.Result{
-					Success: true,
-					Item: types.ValidatorUptimeStatus{
-						Moniker:                   moniker,
-						ProposerAddress:           proposerAddress,
-						ValidatorConsensusAddress: consensusAddress,
-						MissedBlockCounter:        missedBlocksCounter,
-						IsTomstoned:               isTomstoned,
-						ValidatorOperatorAddress:  validatorOperatorAddress,
-					}}
-			}(ch)
-		}
 		time.Sleep(10 * time.Millisecond)
 
 	}
