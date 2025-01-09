@@ -828,16 +828,14 @@ neutron-1:
   chain_name: neutron
   protocol_type: cosmos
   mainnet: true
-  # Need to deactivate for now as the required API is 
-  # interchain_security/ccv/provider/consumer_chains/3 
-  # NOT implemented in Neutron 
-  consumer: false
+  consumer: true
   support_asset:
     denom: untrn
     decimal: 6
   packages:
     - block
     - upgrade
+    - uptime
     - voteindexer
     - veindexer
 nillion:
@@ -1025,16 +1023,14 @@ pion-1:
   chain_name: neutron
   protocol_type: cosmos
   mainnet: false
-  # Need to deactivate for now as the required API is 
-  # interchain_security/ccv/provider/consumer_chains/3 
-  # NOT implemented in Neutron 
-  consumer: false
+  consumer: true
   support_asset:
     denom: untrn
     decimal: 6
   packages:
     - block
     - upgrade
+    - uptime
     - voteindexer
     - veindexer
 provider:
