@@ -941,13 +941,14 @@ neutron-1:
   chain_name: neutron
   protocol_type: cosmos
   mainnet: true
-  consumer: false
+  consumer: true
   support_asset:
     denom: untrn
     decimal: 6
   packages:
     - block
     - upgrade
+    - uptime
     - voteindexer
     - veindexer
 nillion-1:
@@ -1135,13 +1136,14 @@ pion-1:
   chain_name: neutron
   protocol_type: cosmos
   mainnet: false
-  consumer: false
+  consumer: true
   support_asset:
     denom: untrn
     decimal: 6
   packages:
     - block
     - upgrade
+    - uptime
     - voteindexer
     - veindexer
 provider:
