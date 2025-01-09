@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-func ResolveMessage(fullMethodName string, rcli *grpcreflect.Client) (*desc.MethodDescriptor, error) {
+func ResolveMessage(fullMethodName string, rcli *grpcreflect.Client) (protoreflect.MethodDescriptor, error) {
 	// assume that fully-qualified method name cosists of
 	// FULL_SERVER_NAME + "." + METHOD_NAME
 	// so split the last dot to get service name
@@ -25,8 +25,8 @@ func ResolveMessage(fullMethodName string, rcli *grpcreflect.Client) (*desc.Meth
 	if err != nil {
 		return nil, fmt.Errorf("service couldn't be resolve: %v: %v", err, serviceName)
 	}
+	mdesc := sdesc.UnwrapService().Methods().ByName(protoreflect.Name(methodName))
 
-	mdesc := sdesc.FindMethodByName(methodName)
 	if mdesc == nil {
 		return nil, fmt.Errorf("method couldn't be found")
 	}
@@ -34,10 +34,10 @@ func ResolveMessage(fullMethodName string, rcli *grpcreflect.Client) (*desc.Meth
 	return mdesc, nil
 }
 
-func CreateMessage(mdesc *desc.MethodDescriptor, unmarshaler *jsonpb.Unmarshaler, inputJsonString string) (*dynamic.Message, error) {
-	msg := dynamic.NewMessage(mdesc.GetInputType())
+func CreateMessage(mdesc protoreflect.MethodDescriptor, inputJsonString string) (*dynamicpb.Message, error) {
 
-	if err := msg.UnmarshalJSONPB(unmarshaler, []byte(inputJsonString)); err != nil {
+	msg := dynamicpb.NewMessage(mdesc.Input())
+	if err := protojson.Unmarshal([]byte(inputJsonString), msg); err != nil {
 		return nil, fmt.Errorf("unmarshal %v", err)
 	}
 	return msg, nil
