@@ -29,6 +29,8 @@ require (
 
 require github.com/btcsuite/btcd v0.24.2
 
+require google.golang.org/protobuf v1.34.2
+
 require (
 	cosmossdk.io/api v0.8.2
 	google.golang.org/protobuf v1.36.3
