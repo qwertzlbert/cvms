@@ -11,14 +11,12 @@ import (
 	"github.com/cosmostation/cvms/internal/helper"
 	grpchelper "github.com/cosmostation/cvms/internal/helper/grpc"
 	"github.com/cosmostation/cvms/internal/packages/duty/eventnonce/types"
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
 // NOTE: debug
@@ -47,20 +45,16 @@ func GetEventNonceStatusByGRPC(
 	}
 	defer grpcConnection.Close()
 
-	// create grpc reflection client & stub
-	stub := grpcdynamic.NewStub(grpcConnection)
-
 	var headerMD metadata.MD
-	reflectionClient := grpcreflect.NewClientV1Alpha(
+	reflectionClient := grpcreflect.NewClientAuto(
 		metadata.NewOutgoingContext(ctx, headerMD),
-		reflectpb.NewServerReflectionClient(grpcConnection),
+		grpcConnection,
 	)
-
 	// get on-chain validators
 	resp, err := grpchelper.GrpcDynamicQuery(
 		ctx,                                  // common context
 		reflectionClient,                     // grpc reflection client
-		&stub,                                // grpc query stub
+		grpcConnection,                       // grpc query stub
 		types.CommonValidatorGrpcQueryPath,   // grpc query method
 		types.CommonValidatorGrpcQueryOption, // grpc query payload
 	)
@@ -80,7 +74,7 @@ func GetEventNonceStatusByGRPC(
 	// init channel and waitgroup
 	ch := make(chan helper.Result)
 	var wg sync.WaitGroup
-	var methodDescriptor *desc.MethodDescriptor
+	var methodDescriptor protoreflect.MethodDescriptor
 	validatorResults := make([]types.ValidatorStatus, 0)
 
 	// add wg by the number of total validators
@@ -110,7 +104,7 @@ func GetEventNonceStatusByGRPC(
 			resp, err := grpchelper.GrpcInvokeQuery(
 				ctx,                       // common context
 				methodDescriptor,          // grpc query method descriptor
-				&stub,                     // grpc query stub
+				grpcConnection,            // grpc query connection
 				commonOrchestratorPayload, // grpc query payload
 			)
 
@@ -216,7 +210,7 @@ func GetEventNonceStatusByGRPC(
 			resp, err := grpchelper.GrpcInvokeQuery(
 				ctx,              // common context
 				methodDescriptor, // grpc query method descriptor
-				&stub,            // grpc query stub
+				grpcConnection,   // grpc query connection
 				payload,          // grpc query payload
 			)
 			if err != nil {

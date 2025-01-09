@@ -6,7 +6,7 @@ require (
 	github.com/cometbft/cometbft v0.38.13-0.20240930095538-e339afc0bced // v0.38.x
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/go-resty/resty/v2 v2.13.1
-	github.com/golang/protobuf v1.5.4
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gorilla/mux v1.8.1
 	github.com/jhump/protoreflect v1.15.1
 	github.com/jinzhu/inflection v1.0.0
@@ -26,6 +26,8 @@ require (
 	google.golang.org/grpc v1.66.1
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+require google.golang.org/protobuf v1.34.2
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
