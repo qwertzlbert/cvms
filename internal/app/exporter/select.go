@@ -103,7 +103,7 @@ func selectPackage(
 		}
 		return eventnonce.Start(*p)
 	case pkg == "yoda":
-		endpoints := common.Endpoints{APIs: validAPIs, CheckAPI: true}
+		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)

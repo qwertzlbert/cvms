@@ -12,39 +12,10 @@ import (
 	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
+	commonapi "github.com/cosmostation/cvms/internal/common/api"
 	"github.com/cosmostation/cvms/internal/helper"
 	"github.com/cosmostation/cvms/internal/packages/duty/yoda/types"
 )
-
-func GetBlockHeight(
-	c *common.Exporter,
-	CommonYodaBlockHeightRequestPath string,
-	CommonYodaBlockHeightResponseParser func([]byte) (blockHeight int64, err error),
-) (int64, error) {
-	// init context
-	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
-	defer cancel()
-
-	// create requester
-	requester := c.APIClient.R().SetContext(ctx)
-	// get current blockheight
-	resp, err := requester.Get(CommonYodaBlockHeightRequestPath)
-	if err != nil {
-		c.Errorf("api error: %s", err)
-		return 0, common.ErrFailedHttpRequest
-	}
-	if resp.StatusCode() != http.StatusOK {
-		c.Errorf("api error: [%d] %s", resp.StatusCode(), err)
-		return 0, common.ErrGotStrangeStatusCode
-	}
-
-	blockHeight, err := CommonYodaBlockHeightResponseParser(resp.Body())
-	if err != nil {
-		c.Errorf("api error: %s", err)
-		return 0, common.ErrFailedJsonUnmarshal
-	}
-	return blockHeight, nil
-}
 
 func GetYodaStatus(
 	c *common.Exporter,
@@ -56,7 +27,6 @@ func GetYodaStatus(
 	CommonYodaRequestCountsParser func([]byte) (requestCount float64, err error),
 	CommonYodaRequestPath string,
 	CommonYodaRequestParser func([]byte) (requestBlock int64, validatorsFailedToRespond []string, status string, err error),
-	currentBlockHeight int64,
 ) (types.CommonYodaStatus, error) {
 	// init context
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
@@ -117,6 +87,12 @@ func GetYodaStatus(
 	if err != nil {
 		c.Errorf("api error: %s", err)
 		return types.CommonYodaStatus{}, common.ErrFailedJsonUnmarshal
+	}
+
+	currentBlockHeight, _, err := commonapi.GetStatus(c.CommonClient)
+	if err != nil {
+		c.Errorf("api error: %s", err)
+		return types.CommonYodaStatus{}, common.ErrFailedHttpRequest
 	}
 
 	//

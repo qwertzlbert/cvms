@@ -67,13 +67,17 @@ const (
 
 func Start(p common.Packager) error {
 	if ok := helper.Contains(types.SupportedChains, p.ChainName); ok {
+		exporter := common.NewExporter(p)
 		packageMonikers = p.Monikers
-		for _, api := range p.APIs {
-			client := common.NewExporter(p)
-			client.SetAPIEndPoint(api)
-			go loop(client, p)
+		for _, rpc := range p.RPCs {
+			exporter.SetRPCEndPoint(rpc)
 			break
 		}
+		for _, api := range p.APIs {
+			exporter.SetAPIEndPoint(api)
+			break
+		}
+		go loop(exporter, p)
 		return nil
 	}
 	return errors.Errorf("unsupported chain: %s", p.ChainName)
@@ -193,6 +197,14 @@ func loop(c *common.Exporter, p common.Packager) {
 						common.MonikerLabel:          item.Moniker,
 					}).
 					Set(item.MaxMisses)
+			}
+
+			for _, req := range reqsFinished {
+				YodaValidatorMissSummary.
+					With(prometheus.Labels{
+						common.ValidatorAddressLabel: req.Validator.ValidatorOperatorAddress,
+						common.MonikerLabel:          req.Validator.Moniker,
+					}).Observe(float64(req.Request.BlocksPassed))
 			}
 
 		} else {
