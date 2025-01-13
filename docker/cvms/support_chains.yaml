@@ -177,6 +177,7 @@ bbn-test-5:
     - upgrade
     - uptime
     - voteindexer
+    - babylon_checkpoint
 bitcanna-1:
   chain_name: bitcanna
   protocol_type: cosmos
