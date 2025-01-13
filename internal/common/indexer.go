@@ -11,6 +11,7 @@ import (
 
 // metrics name for indexer
 const (
+	IndexPointerEpochMetricName          = "latest_index_pointer_epoch"
 	IndexPointerBlockHeightMetricName    = "latest_index_pointer_block_height"
 	IndexPointerBlockTimestampMetricName = "latest_index_pointer_block_timestamp"
 	LatestBlockHeightMetricName          = "latest_block_height"

@@ -13,6 +13,7 @@ var (
 		// consensus
 		"voteindexer",
 		"veindexer",
+		"babylon_checkpoint",
 	}
 
 	ExporterPackages = []string{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
@@ -121,6 +122,42 @@ func GetValidators(c common.CommonClient, height ...int64) ([]types.CosmosValida
 			return nil, errors.New("failed to find out all cosmos validators in this height")
 		}
 	}
+}
+
+func GetStakingValidatorsByHeight(c common.CommonClient, chainName string, height int64) ([]types.CosmosStakingValidator, error) {
+	queryPath := types.CosmosStakingValidatorQueryPath(string(types.Bonded))
+	stakingValidatorParser := parser.CosmosStakingValidatorParser
+
+	// init context
+	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
+	defer cancel()
+
+	// create requester
+	requester := c.APIClient.R().SetContext(ctx)
+
+	// set header by block height
+	heightStr := strconv.FormatInt(height, 10)
+	header := map[string]string{"Content-Type": "application/json", "x-cosmos-block-height": heightStr}
+	requester.SetHeaders(header)
+
+	// get on-chain validators in staking module
+	resp, err := requester.Get(queryPath)
+	if err != nil {
+		// c.Errorf("api error: %s", err)
+		return nil, errors.Wrap(err, "failed in api")
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, errors.Errorf("got %d code from %s", resp.StatusCode(), resp.Request.URL)
+	}
+
+	stakingValidators, err := stakingValidatorParser(resp.Body())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed in api")
+	}
+
+	// logging total validators count
+	// c.Debugf("total cosmos staking validators: %d", len(stakingValidators))
+	return stakingValidators, nil
 }
 
 // TODO: Move parsing logic into parser module for other blockchains
