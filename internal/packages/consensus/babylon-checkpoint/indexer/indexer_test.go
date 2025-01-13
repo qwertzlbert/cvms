@@ -133,7 +133,7 @@ func TestSyncEpoch(t *testing.T) {
 		// t.Logf("first tx in the block: %s", resp.Body())
 
 		// pasre type
-		txsReponse := TxsResponse{}
+		txsReponse := BlockTxsResponse{}
 		err = json.Unmarshal(resp.Body(), &txsReponse)
 		assert.NoError(t, err)
 

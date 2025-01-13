@@ -77,7 +77,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 			return lastIndexPointerEpoch, errors.Wrap(err, "failed to get epoch data")
 		}
 
-		prevBlockHeight, preBlockTimestamp, preBlockProposerAddress, _, _, _, err := api.GetBlock(idx.CommonClient, firstBlockHeightInEpoch-1)
+		prevBlockHeight, _, preBlockProposerAddress, _, _, _, err := api.GetBlock(idx.CommonClient, firstBlockHeightInEpoch-1)
 		if err != nil {
 			idx.Errorf("failed to call at %d height data, %s", prevBlockHeight, err)
 			return lastIndexPointerEpoch, err
@@ -90,12 +90,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 			return lastIndexPointerEpoch, err
 		}
 
-		blockSummary := types.BlockSummary{
-			BlockHeight:          prevBlockHeight,
-			BlockTimeStamp:       preBlockTimestamp,
-			BlockProposerAddress: preBlockProposerAddress,
-			CosmosValidators:     validators,
-		}
+		blockSummary := types.BlockSummary{BlockProposerAddress: preBlockProposerAddress, CosmosValidators: validators}
 
 		// update validator address
 		{
@@ -157,7 +152,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 			return lastIndexPointerEpoch, err
 		}
 
-		bexVotes, err := ParseTxAndExtractBabylonExtendVote(resp.Body())
+		blockHeight, blockTimestamp, bexVotes, err := ExtractBabylonExtendVoteAndBlockInfo(resp.Body())
 		if err != nil {
 			idx.Errorln(err)
 			return lastIndexPointerEpoch, err
@@ -170,10 +165,9 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 			// vms instance data
 			idx.ChainInfoID,
 			idx.Vim,
-			// previous block data
-			blockSummary.BlockHeight,
-			blockSummary.BlockTimeStamp,
 			// current block data
+			blockHeight,
+			blockTimestamp,
 			epoch,
 			bexVotes,
 		)
@@ -227,10 +221,8 @@ func makeBabylonExtensionVote(
 	vml *logrus.Entry,
 	chainInfoID int64,
 	validatorIDMap indexertypes.ValidatorIDMap,
-	// previous block data
-	lastCommitBlockHeight int64,
-	lastCommitBlockTimestamp time.Time,
-	// current block txs data
+	blockHeight int64,
+	blockTimestamp time.Time,
 	epoch int64,
 	votes []BabylonExtendVote,
 ) ([]model.BabylonVoteExtension, error) {
@@ -245,7 +237,7 @@ func makeBabylonExtensionVote(
 		if vote.ExtensionSignature == "" {
 			vml.Debugf(
 				`found miss validator idx: %d, address: %s in this %d height`,
-				validatorIDMap[validatorAddress], validatorAddress, lastCommitBlockHeight,
+				validatorIDMap[validatorAddress], validatorAddress, blockHeight,
 			)
 			validatorHexAddressID, exist := validatorIDMap[validatorAddress]
 			if !exist {
@@ -255,8 +247,8 @@ func makeBabylonExtensionVote(
 			bevList = append(bevList, model.BabylonVoteExtension{
 				ChainInfoID:           chainInfoID,
 				Epoch:                 epoch,
-				Height:                lastCommitBlockHeight,
-				Timestamp:             lastCommitBlockTimestamp,
+				Height:                blockHeight,
+				Timestamp:             blockTimestamp,
 				ValidatorHexAddressID: validatorHexAddressID,
 				Status:                status,
 			})
@@ -270,8 +262,8 @@ func makeBabylonExtensionVote(
 			bevList = append(bevList, model.BabylonVoteExtension{
 				ChainInfoID:           chainInfoID,
 				Epoch:                 epoch,
-				Height:                lastCommitBlockHeight,
-				Timestamp:             lastCommitBlockTimestamp,
+				Height:                blockHeight,
+				Timestamp:             blockTimestamp,
 				ValidatorHexAddressID: validatorHexAddressID,
 				Status:                status,
 			})

@@ -3,6 +3,8 @@ package indexer
 import (
 	"encoding/json"
 	"fmt"
+
+	commontypes "github.com/cosmostation/cvms/internal/common/types"
 )
 
 // SUPPORTED_MESSAGE_TYPES in CVMS
@@ -92,6 +94,7 @@ type CosmosTx struct {
 	Signatures []string    `json:"-"`
 }
 
-type TxsResponse struct {
+type BlockTxsResponse struct {
 	Txs []CosmosTx `json:"txs"`
+	commontypes.CosmosBlock
 }

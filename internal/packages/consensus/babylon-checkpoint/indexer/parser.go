@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -58,37 +59,47 @@ func ParseEpoch(resp []byte) (
 	return firstBlockHeight, currentEpochInterval, nil
 }
 
-func ParseTxAndExtractBabylonExtendVote(resp []byte) ([]BabylonExtendVote, error) {
-	txsReponse := TxsResponse{}
-	err := json.Unmarshal(resp, &txsReponse)
+func ExtractBabylonExtendVoteAndBlockInfo(resp []byte) (
+	/* block height */ int64,
+	/* block timestamp */ time.Time,
+	[]BabylonExtendVote,
+	error,
+) {
+	result := BlockTxsResponse{}
+	err := json.Unmarshal(resp, &result)
 	if err != nil {
-		return nil, err
+		return 0, time.Time{}, nil, err
 	}
 
-	for _, tx := range txsReponse.Txs {
+	for _, tx := range result.Txs {
 		for _, message := range tx.Body.Messages {
 			var preResult map[string]json.RawMessage
 			if err := json.Unmarshal(message, &preResult); err != nil {
-				return nil, err
+				return 0, time.Time{}, nil, err
 			}
 
 			if rawType, ok := preResult["@type"]; ok {
 				var typeValue string
 				if err := json.Unmarshal(rawType, &typeValue); err != nil {
-					return nil, err
+					return 0, time.Time{}, nil, err
 				}
 
 				votes, err := ParseDynamicMessage(message, typeValue)
 				if err != nil {
-					return nil, err
+					return 0, time.Time{}, nil, err
 				}
 
-				return votes, nil
+				blockHeight, err := strconv.ParseInt(result.Block.Header.Height, 10, 64)
+				if err != nil {
+					return 0, time.Time{}, nil, err
+				}
+
+				return blockHeight, result.Block.Header.Time, votes, nil
 			}
 		}
 	}
 
-	return nil, errors.New("unexpected errors")
+	return 0, time.Time{}, nil, errors.New("unexpected errors")
 }
 
 // parseDynamicMessage dynamically parses the message based on its type.
