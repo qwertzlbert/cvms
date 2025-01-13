@@ -141,7 +141,7 @@ func (idx *CheckpointIndexer) Loop(indexPoint int64) {
 			common.Health.With(idx.RootLabels).Set(0)
 			common.Ops.With(idx.RootLabels).Inc()
 			isUnhealth = true
-			idx.Errorf("failed to sync validators vote status in %d height: %s\nit will be retried after sleep %s...",
+			idx.Errorf("failed to sync validators vote status in %d epoch: %s\nit will be retried after sleep %s...",
 				indexPoint, err, indexertypes.AfterFailedRetryTimeout.String(),
 			)
 			time.Sleep(indexertypes.AfterFailedRetryTimeout)

@@ -31,6 +31,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 	/* new index pointer */ int64,
 	/* error */ error,
 ) {
+	newIndexerPointerEpoch := lastIndexPointerEpoch + 1
 	requester := idx.APIClient.R().SetContext(context.Background())
 	resp, err := requester.Get(CurrentEpochQueryPath)
 	if err != nil {
@@ -46,27 +47,31 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 	idx.Debugf("current epoch: %d and last finalized epoch: %d", currentEpoch, lastFinalizedEpoch)
 
 	// NOTE: if (current epoch -1) > lastEpoch -> the indexer needs to sync more epoch
-	if lastIndexPointerEpoch > lastFinalizedEpoch {
+	if newIndexerPointerEpoch > lastFinalizedEpoch {
 		idx.Infof(
 			"last finalized epoch is %d and last db epoch is %d. nothing to sync epochs, so it'll skip the logic",
 			lastFinalizedEpoch, lastIndexPointerEpoch,
 		)
-		sleepDuration := (time.Second * 60)
+		sleepDuration := (time.Minute * 10)
 		idx.Infof("sleep %s sec...", sleepDuration.String())
 		time.Sleep(sleepDuration)
 		return lastIndexPointerEpoch, nil
 	}
 
-	for epoch := range lastFinalizedEpoch {
+	idx.Infof("last finalized epoch(current_epoch -1) is %d and last index pointer epoch is %d", lastFinalizedEpoch, lastIndexPointerEpoch)
+	idx.Infof("new sync epoch: %d", newIndexerPointerEpoch)
+
+	for epoch := range lastFinalizedEpoch + 1 {
 		if epoch <= 1 {
 			continue
 		}
 
-		if lastIndexPointerEpoch > epoch {
+		if newIndexerPointerEpoch > epoch {
 			idx.Debugf("skip %d epoch. the epoch was already stored in the DB", epoch)
 			continue
 		}
 
+		idx.Debugf("sync epoch: %d", epoch)
 		resp, err := requester.Get(EpochQueryPath(epoch))
 		if err != nil {
 			return lastIndexPointerEpoch, errors.Wrap(err, "failed to get epoch data")
@@ -209,7 +214,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		// update epoch & metrics
 		idx.updatePrometheusMetrics(epoch, blockSummary.BlockTimeStamp)
 		idx.Infof("updated babylon checkpoint BLS singings in %d epoch ", epoch)
-		return epoch + 1, nil
+		return newIndexerPointerEpoch, nil
 	}
 
 	// NOTE: sync will be working by each epoch. so, the normal situation it's not gonna run in the code.
