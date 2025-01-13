@@ -256,8 +256,8 @@
     "list": [
       {
         "current": {
-          "text": "pacific_1",
-          "value": "pacific_1"
+          "text": "bbn_test_5",
+          "value": "bbn_test_5"
         },
         "datasource": {
           "type": "prometheus",
