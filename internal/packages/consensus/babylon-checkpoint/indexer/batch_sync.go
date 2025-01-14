@@ -61,7 +61,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 	idx.Infof("last finalized epoch(current_epoch -1) is %d and last index pointer epoch is %d", lastFinalizedEpoch, lastIndexPointerEpoch)
 	idx.Infof("new sync epoch: %d", newIndexerPointerEpoch)
 
-	for epoch := range lastFinalizedEpoch + 1 {
+	for epoch := int64(0); epoch <= lastFinalizedEpoch; epoch++ {
 		if epoch <= 1 {
 			continue
 		}

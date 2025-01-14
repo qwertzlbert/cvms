@@ -104,7 +104,7 @@ func TestSyncEpoch(t *testing.T) {
 	assert.NoError(t, err)
 
 	// for loop until current epoch
-	for epoch := range currentEpoch {
+	for epoch := int64(0); epoch <= int64(currentEpoch); epoch++ {
 		if epoch == 0 {
 			t.Log("skip the zero epoch")
 			continue
