@@ -263,6 +263,7 @@ comdex-1:
   chain_name: comdex
   protocol_type: cosmos
   mainnet: true
+  consumer: true
   support_asset:
     denom: ucmdx
     decimal: 6
@@ -457,6 +458,7 @@ elys-1:
   chain_name: elys
   protocol_type: cosmos
   mainnet: true
+  consumer: true
   support_asset:
     denom: uelys
     decimal: 6
