@@ -20,9 +20,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/uptrace/bun v1.2.8
 	github.com/uptrace/bun/dialect/pgdialect v1.2.8
-	github.com/uptrace/bun/dialect/sqlitedialect v1.2.8
 	github.com/uptrace/bun/driver/pgdriver v1.2.8
-	github.com/uptrace/bun/driver/sqliteshim v1.2.8
 	github.com/uptrace/bun/extra/bundebug v1.2.8
 	golang.org/x/crypto v0.31.0
 	google.golang.org/grpc v1.66.1
@@ -37,21 +35,16 @@ require (
 	github.com/cosmos/gogoproto v1.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v1.14.24 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -59,23 +52,14 @@ require (
 	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.4.0 // indirect
-	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	mellium.im/sasl v0.3.2 // indirect
-	modernc.org/gc/v3 v3.0.0-20250105121824-520be1a3aee6 // indirect
-	modernc.org/libc v1.61.6 // indirect
-	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.8.1 // indirect
-	modernc.org/sqlite v1.34.4 // indirect
-	modernc.org/strutil v1.2.1 // indirect
-	modernc.org/token v1.1.0 // indirect
 )
