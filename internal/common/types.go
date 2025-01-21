@@ -67,7 +67,7 @@ func (a Mode) String() string {
 
 type CommonClient struct {
 	RPCClient  Client
-	APIClient  *resty.Client
+	APIClient  Client
 	GRPCClient *resty.Client
 	*logrus.Entry
 }
@@ -82,7 +82,7 @@ type Client interface {
 	SetEndpoint(endpoint string) Client
 	GetEndpoint() (string, error)
 	Get(context context.Context, uri string) ([]byte, error)
-	// Post(uri string, context context.Context, body ...[]byte) ([]byte, error)
+	Post(context context.Context, uri string, body ...[]byte) ([]byte, error)
 }
 
 type RestyClient struct {
@@ -135,20 +135,26 @@ func (rc *RestyClient) Get(context context.Context, uri string) ([]byte, error) 
 	return resp.Body(), nil
 }
 
+func (rc *RestyClient) Post(context context.Context, uri string, body ...[]byte) ([]byte, error) {
+	resp, err := rc.client.R().
+		SetHeader("Content-Type", "application/json").
+		SetContext(context).
+		SetBody(body).
+		Post(rc.endpoint + uri)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, errors.Wrapf(err, "api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
+	}
+	return resp.Body(), nil
+}
+
 func NewCommonApp(p Packager) CommonApp {
 	restyLogger := logrus.New()
 	restyLogger.Out = io.Discard
 	rpcClient := NewRestyClient().SetLogger(restyLogger)
-	// rpcClientOld := resty.New().
-	// 	SetRetryCount(retryCount).
-	// 	SetRetryWaitTime(retryMaxWaitTimeDuration).
-	// 	SetRetryMaxWaitTime(retryMaxWaitTimeDuration).
-	// 	SetLogger(restyLogger)
-	apiClient := resty.New().
-		SetRetryCount(retryCount).
-		SetRetryWaitTime(retryMaxWaitTimeDuration).
-		SetRetryMaxWaitTime(retryMaxWaitTimeDuration).
-		SetLogger(restyLogger)
+	apiClient := NewRestyClient().SetLogger(restyLogger)
 	grpcClient := resty.New().
 		SetRetryCount(retryCount).
 		SetRetryWaitTime(retryMaxWaitTimeDuration).
@@ -177,12 +183,13 @@ func (c *CommonClient) GetRPCEndPoint() string {
 	return endpoint
 }
 
-func (c *CommonClient) SetAPIEndPoint(endpoint string) *resty.Client {
-	return c.APIClient.SetBaseURL(endpoint)
+func (c *CommonClient) SetAPIEndPoint(endpoint string) Client {
+	return c.APIClient.SetEndpoint(endpoint)
 }
 
 func (c *CommonClient) GetAPIEndPoint() string {
-	return c.APIClient.BaseURL
+	endpoint, _ := c.APIClient.GetEndpoint()
+	return endpoint
 }
 
 func (c *CommonClient) SetGRPCEndPoint(endpoint string) *resty.Client {
@@ -197,15 +204,6 @@ func NewOptionalClient(entry *logrus.Entry) CommonClient {
 	restyLogger := logrus.New()
 	restyLogger.Out = io.Discard
 	rpcClient := NewRestyClient().SetLogger(restyLogger)
-	// rpcClientOld := resty.New().
-	// 	SetRetryCount(retryCount).
-	// 	SetRetryWaitTime(retryMaxWaitTimeDuration).
-	// 	SetRetryMaxWaitTime(retryMaxWaitTimeDuration).
-	// 	SetLogger(restyLogger)
-	apiClient := resty.New().
-		SetRetryCount(retryCount).
-		SetRetryWaitTime(retryMaxWaitTimeDuration).
-		SetRetryMaxWaitTime(retryMaxWaitTimeDuration).
-		SetLogger(restyLogger)
+	apiClient := NewRestyClient().SetLogger(restyLogger)
 	return CommonClient{rpcClient, apiClient, nil, entry}
 }

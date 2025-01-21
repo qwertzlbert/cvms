@@ -192,19 +192,16 @@ func GetStakingValidators(c common.CommonClient, chainName string, status ...str
 	defer cancel()
 
 	// create requester
-	requester := c.APIClient.R().SetContext(ctx)
+	requester := c.APIClient
 
 	// get on-chain validators in staking module
-	resp, err := requester.Get(queryPath)
+	resp, err := requester.Get(ctx, queryPath)
 	if err != nil {
 		// c.Errorf("api error: %s", err)
 		return nil, errors.Wrap(err, "failed in api")
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Errorf("got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
 
-	stakingValidators, err := stakingValidatorParser(resp.Body())
+	stakingValidators, err := stakingValidatorParser(resp)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed in api")
 	}
@@ -218,17 +215,14 @@ func GetProviderValidators(c common.CommonClient, consumerID string) ([]types.Pr
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(types.ProviderValidatorsQueryPath(consumerID))
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, types.ProviderValidatorsQueryPath(consumerID))
 	if err != nil {
 		return nil, errors.Cause(err)
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Wrapf(err, "api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
 
 	var result types.CosmosProviderValidatorsResponse
-	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, errors.Cause(err)
 	}
 
@@ -239,17 +233,14 @@ func GetConsumerChainID(c common.CommonClient) ([]types.ConsumerChain, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(types.ConsumerChainListQueryPath)
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, types.ConsumerChainListQueryPath)
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Errorf("api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
 
 	var result types.CosmosConsumerChainsResponse
-	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, err
 	}
 
@@ -260,17 +251,14 @@ func GetConsumerChainHRP(c common.CommonClient) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(types.CosmosSlashingLimitQueryPath)
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, types.CosmosSlashingLimitQueryPath)
 	if err != nil {
 		return "", errors.Cause(err)
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return "", errors.Wrapf(err, "api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
 
 	var result types.CosmosSlashingResponse
-	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+	if err := json.Unmarshal(resp, &result); err != nil {
 		return "", errors.Cause(err)
 	}
 

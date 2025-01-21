@@ -32,14 +32,8 @@ func GetBlockStatus(
 
 	if CommonBlockCallMethod == common.GET {
 		resp, err = c.RPCClient.Get(ctx, CommonBlockQueryPath)
-		// SetHeader("Content-Type", "application/json").
-		// SetBody(CommonBlockPayload).
-		// Get(CommonBlockQueryPath)
-		// } else if CommonBlockCallMethod == common.POST {
-		// 	resp, err = requester.
-		// 		SetHeader("Content-Type", "application/json").
-		// 		SetBody(CommonBlockPayload).
-		// 		Post(CommonBlockQueryPath)
+	} else if CommonBlockCallMethod == common.POST {
+		resp, err = c.RPCClient.Post(ctx, CommonBlockQueryPath, []byte(CommonBlockPayload))
 	} else {
 		return types.CommonBlock{}, common.ErrUnSupportedMethod
 	}
@@ -48,11 +42,6 @@ func GetBlockStatus(
 		c.Errorf("api error: %s", err)
 		return types.CommonBlock{}, common.ErrFailedHttpRequest
 	}
-
-	// if resp.StatusCode() != http.StatusOK {
-	// 	c.Errorf("request error: [%d] %s", resp.StatusCode(), err)
-	// 	return types.CommonBlock{}, common.ErrGotStrangeStatusCode
-	// }
 
 	blockHeight, blockTimeStamp, err := CommonBlockParser(resp)
 	if err != nil {

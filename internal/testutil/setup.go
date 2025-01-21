@@ -86,16 +86,8 @@ func GetTestExporter() *common.Exporter {
 	l := logger.GetTestLogger()
 	restyLogger := logrus.New()
 	restyLogger.Out = io.Discard
-	RPCClient := resty.New().
-		SetRetryCount(10).
-		SetRetryWaitTime(10 * time.Millisecond).
-		SetRetryMaxWaitTime(3 * time.Second).
-		SetLogger(restyLogger)
-	APIClient := resty.New().
-		SetRetryCount(10).
-		SetRetryWaitTime(10 * time.Millisecond).
-		SetRetryMaxWaitTime(3 * time.Second).
-		SetLogger(restyLogger)
+	RPCClient := common.NewRestyClient().SetLogger(restyLogger)
+	APIClient := common.NewRestyClient().SetLogger(restyLogger)
 	GRPCClient := resty.New().
 		SetRetryCount(10).
 		SetRetryWaitTime(10 * time.Millisecond).
