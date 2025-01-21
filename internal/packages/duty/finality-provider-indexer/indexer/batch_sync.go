@@ -13,24 +13,23 @@ import (
 
 // NOTE: in this package, the missed height means fp didn't broadcast the finality sig tx in height+1 block
 // for example, I didn't broadcast the tx at 100 block, that will make missed block for 99 height.
-func (idx *FinalityProviderIndexer) batchSync(lastIndexPointerHeight, newIndexPointerHeight int64) (
+func (idx *FinalityProviderIndexer) batchSync(lastIndexPointerHeight int64) (
 	/* new index pointer */ int64,
 	/* error */ error,
 ) {
-	if lastIndexPointerHeight >= idx.Lh.LatestHeight {
-		idx.Infof("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, idx.Lh.LatestHeight)
+	// set starntHeight and endHeight for batch sync
+	// NOTE: end height will use latest height -1 for waiting latest vote status
+	startHeight := (lastIndexPointerHeight + 1)
+	endHeight := (idx.Lh.LatestHeight - 1)
+	if startHeight > endHeight {
+		idx.Infof("no need to sync from %d height to %d height, so it'll skip the logic", startHeight, endHeight)
 		return lastIndexPointerHeight, nil
 	}
 
-	// set starntHeight and endHeight for batch sync
-	// NOTE: end height will use latest height -1 for waiting latest vote status
-	startHeight := newIndexPointerHeight
-	endHeight := (idx.Lh.LatestHeight - 1)
-
 	// set limit at end-height in this batch sync logic
-	if (idx.Lh.LatestHeight - newIndexPointerHeight) > indexertypes.BatchSyncLimit {
-		endHeight = newIndexPointerHeight + indexertypes.BatchSyncLimit
-		idx.Debugf("by batch sync limit, end height will change to %d", endHeight)
+	if (endHeight - startHeight) > indexertypes.BatchSyncLimit {
+		endHeight = startHeight + indexertypes.BatchSyncLimit
+		idx.Infof("by batch sync limit, end height will change to %d", endHeight)
 	}
 
 	// init channel and waitgroup for go-routine

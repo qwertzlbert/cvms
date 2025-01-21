@@ -16,6 +16,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const InitEpochInterval = 50
+
 // NOTE: babylon checkpoint will be created at epoch + 1 block in each epoch
 // first we can get the epoch parameter from the chain
 // 1. get current epoch /babylon/epoching/v1/epochs/current_epoch -> 22
@@ -43,6 +45,11 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		return lastIndexPointerEpoch, errors.Wrap(err, "failed to parse current epoch response")
 	}
 
+	if (currentEpoch - newIndexerPointerEpoch) > InitEpochInterval {
+		newIndexerPointerEpoch = currentEpoch - InitEpochInterval
+		idx.Infof("changed index pointer epoch: %d to ignore old epoch data", newIndexerPointerEpoch)
+	}
+
 	lastFinalizedEpoch := (currentEpoch - 1)
 	idx.Debugf("current epoch: %d and last finalized epoch: %d", currentEpoch, lastFinalizedEpoch)
 
@@ -59,8 +66,6 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 	}
 
 	idx.Infof("last finalized epoch(current_epoch -1) is %d and last index pointer epoch is %d", lastFinalizedEpoch, lastIndexPointerEpoch)
-	idx.Infof("new sync epoch: %d", newIndexerPointerEpoch)
-
 	for epoch := int64(0); epoch <= lastFinalizedEpoch; epoch++ {
 		if epoch <= 1 {
 			continue
@@ -213,8 +218,8 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 
 		// update epoch & metrics
 		idx.updatePrometheusMetrics(epoch, blockSummary.BlockTimeStamp)
-		idx.Infof("updated babylon checkpoint BLS singings in %d epoch ", epoch)
-		return newIndexerPointerEpoch, nil
+		idx.Debugf("updated babylon checkpoint BLS singings in %d epoch ", epoch)
+		return epoch, nil
 	}
 
 	// NOTE: sync will be working by each epoch. so, the normal situation it's not gonna run in the code.
