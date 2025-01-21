@@ -7,7 +7,7 @@ providers:
     folder: 'Validator Dashboards'
     type: file
     disableDeletion: false
-    editable: false
+    editable: true
     options:
       path: /etc/grafana/provisioning/dashboards/validator
 
@@ -16,6 +16,6 @@ providers:
     folder: 'Network Dashboards'
     type: file
     disableDeletion: false
-    editable: false
+    editable: true
     options:
       path: /etc/grafana/provisioning/dashboards/network

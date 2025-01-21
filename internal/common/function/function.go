@@ -228,3 +228,13 @@ func GetStakingValidators(client common.CommonClient, chainName string, newStaki
 	}
 	return nil
 }
+
+func MakeFinalityProviderInfoList(
+	app common.CommonApp,
+	chainID string, chainInfoID int64,
+	chainName string, isConsumer bool,
+	newValidatorAddressMap map[string]bool,
+	height ...int64,
+) ([]indexermodel.FinalityProviderInfo, error) {
+	return nil, nil
+}

@@ -7,6 +7,7 @@ import (
 	bcindexer "github.com/cosmostation/cvms/internal/packages/consensus/babylon-checkpoint/indexer"
 	veindexer "github.com/cosmostation/cvms/internal/packages/consensus/veindexer/indexer"
 	voteindexer "github.com/cosmostation/cvms/internal/packages/consensus/voteindexer/indexer"
+	fpindexer "github.com/cosmostation/cvms/internal/packages/duty/finality-provider-indexer/indexer"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
@@ -98,6 +99,23 @@ func selectPackage(
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		return bcindexer.Start()
+	case pkg == "finality_provider_indexer":
+		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
+		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
+		if err != nil {
+			return errors.Wrap(err, common.ErrFailedToBuildPackager)
+		}
+		p.SetIndexerDB(idb)
+		if isConsumer {
+			providerEndpoints := common.Endpoints{RPCs: providerRPCs, CheckRPC: true, APIs: providerAPIs, CheckAPI: true}
+			p.SetAddtionalEndpoints(providerEndpoints)
+			p.SetConsumer()
+		}
+		fpindexer, err := fpindexer.NewFinalityProviderIndexer(*p)
+		if err != nil {
+			return errors.Wrap(err, common.ErrFailedToBuildPackager)
+		}
+		return fpindexer.Start()
 	}
 
 	return common.ErrUnSupportedPackage

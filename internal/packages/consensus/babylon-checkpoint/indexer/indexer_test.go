@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -176,4 +177,27 @@ func TestSyncMachnismForBLSsigning(t *testing.T) {
 	} else {
 		t.Logf("validator address is correct: %X", hexAddress)
 	}
+}
+func TestMakeBLSAddressFromCometBFTAddress(t *testing.T) {
+	hexAddress := "96FD92D649AE03B2F5B83098D3E47669F99200B5"
+
+	// Decode the hex string to bytes
+	bytes, err := hex.DecodeString(hexAddress)
+	if err != nil {
+		t.Errorf("failed to decode hex string: %v", err)
+	}
+
+	// Encode the bytes to a base64 string
+	base64Address := base64.StdEncoding.EncodeToString(bytes)
+
+	// Expected base64-encoded string
+	expectedAddress := "lv2S1kmuA7L1uDCY0+R2afmSALU="
+
+	// Validate the result
+	if base64Address != expectedAddress {
+		t.Errorf("base64 address does not match: got %s, expected %s", base64Address, expectedAddress)
+	} else {
+		t.Logf("base64 address is correct: %s", base64Address)
+	}
+
 }

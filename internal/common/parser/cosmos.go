@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -209,4 +210,78 @@ func CosmosSlashingParamsParser(resp []byte) (signedBlocksWindow float64, minSig
 		return 0, 0, err
 	}
 	return signedBlocksWindow, minSignedPerWindow, nil
+}
+
+// this function return two events but one of them will be empty events
+func CosmosBlockResultsParser(resp []byte) (txsEvents []types.BlockEvent, blockEvents []types.BlockEvent, err error) {
+	var preResult map[string]interface{}
+	if err := json.Unmarshal(resp, &preResult); err != nil {
+		return nil, nil, err
+	}
+
+	_, ok := preResult["jsonrpc"].(string)
+	if ok {
+		var result types.CosmosBlockResultResponse
+		if err := json.Unmarshal(resp, &result); err != nil {
+			return nil, nil, err
+		}
+
+		txsEvents := make([]types.BlockEvent, 0)
+		for _, txResult := range result.Result.TxsResults {
+			txsEvents = append(txsEvents, txResult.Events...)
+		}
+
+		blockEvents := make([]types.BlockEvent, 0)
+		blockEvents = append(blockEvents, result.Result.BeginBlockEvents...)
+		blockEvents = append(blockEvents, result.Result.EndBlockEvents...)
+		blockEvents = append(blockEvents, result.Result.FinalizeBlockEvents...)
+
+		decodedTxsEvents, decodedBlockEvents := DecodeEventsInBlockResults(txsEvents, blockEvents)
+		return decodedTxsEvents, decodedBlockEvents, nil
+	}
+
+	return nil, nil, errors.New("unexpected response data in block results")
+}
+
+func DecodeEventsInBlockResults(txsEvents []types.BlockEvent, blockEvents []types.BlockEvent) ([]types.BlockEvent, []types.BlockEvent) {
+	for i, event := range txsEvents {
+		txsEvents[i].Attributes = DecodeAttributes(event.Attributes)
+	}
+
+	for i, event := range blockEvents {
+		blockEvents[i].Attributes = DecodeAttributes(event.Attributes)
+	}
+
+	return txsEvents, blockEvents
+}
+
+func DecodeAttributes(attributes []types.Attribute) []types.Attribute {
+	for i, attr := range attributes {
+		// Decode both key and value if possible
+		attributes[i].Key = decodeBase64IfPossible(attr.Key)
+		attributes[i].Value = decodeBase64IfPossible(attr.Value)
+	}
+	return attributes
+}
+
+// decodeBase64IfPossible tries to decode a base64 string to UTF-8; if the operation fails,
+// it returns the original string.
+func decodeBase64IfPossible(text string) string {
+	if text == "" {
+		return text
+	}
+
+	decodedBytes, err := base64.StdEncoding.DecodeString(text)
+	if err != nil {
+		// In case of an error, assume it's not base64 encoded and return the original text
+		return text
+	}
+	decodedText := string(decodedBytes)
+
+	// Check if re-encoding the decoded text equals the original text
+	if base64.StdEncoding.EncodeToString([]byte(decodedText)) == text {
+		return decodedText
+	}
+
+	return text
 }

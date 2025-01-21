@@ -288,3 +288,34 @@ func GetConsumerChainHRP(c common.CommonClient) (string, error) {
 
 	return hrp, nil
 }
+
+// query a new block to find missed validators index
+func GetBlockResults(c common.CommonClient, height int64) (
+	[]types.BlockEvent,
+	[]types.BlockEvent,
+	/* unexpected error */ error,
+) {
+
+	// init context
+	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
+	defer cancel()
+
+	// create requester
+	requester := c.RPCClient.R().SetContext(ctx)
+
+	resp, err := requester.Get(types.CosmosBlockResultsQueryPath(height))
+	if err != nil {
+		return nil, nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+
+	}
+
+	txsEvents, blockEvents, err := parser.CosmosBlockResultsParser(resp.Body())
+	if err != nil {
+		return nil, nil, errors.WithStack(err)
+	}
+
+	return txsEvents, blockEvents, nil
+}

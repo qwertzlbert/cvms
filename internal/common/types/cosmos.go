@@ -266,3 +266,41 @@ type CosmosUpgradeResponse struct {
 		UpgradedClientState string `json:"upgraded_client_state"`
 	} `json:"plan"`
 }
+
+var CosmosBlockResultsQueryPath = func(height int64) string {
+	return fmt.Sprintf("/block_results?height=%d", height)
+}
+
+type CosmosBlockResultResponse struct {
+	JsonRPC string `json:"jsonrpc" validate:"required"`
+	ID      int    `json:"id" validate:"required"`
+	Result  struct {
+		Height     string     `json:"height"`
+		TxsResults []TxResult `json:"txs_results"`
+		// case1)
+		// https://github.com/cometbft/cometbft/blob/v0.37.0/rpc/core/types/responses.go#L54
+		BeginBlockEvents []BlockEvent `json:"begin_block_events"`
+		EndBlockEvents   []BlockEvent `json:"end_block_events"`
+		// case2)
+		// https://github.com/cometbft/cometbft/blob/v0.38.0/rpc/core/types/responses.go#L54
+		FinalizeBlockEvents []BlockEvent `json:"finalize_block_events"`
+		//
+		ValidatorUpdate       interface{}    `json:"-"`
+		ConsensusParamUpdates map[string]any `json:"-"`
+	} `json:"result" validate:"required"`
+}
+type TxResult struct {
+	Code   int64        `json:"code"`
+	Events []BlockEvent `json:"events"`
+}
+
+type BlockEvent struct {
+	TypeName   string      `json:"type"`
+	Attributes []Attribute `json:"attributes"`
+}
+
+type Attribute struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	Index bool   `json:"index"`
+}

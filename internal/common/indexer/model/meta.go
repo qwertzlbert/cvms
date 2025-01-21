@@ -6,6 +6,25 @@ import (
 	"github.com/uptrace/bun"
 )
 
+type FinalityProviderInfo struct {
+	bun.BaseModel   `bun:"table:meta.finality_provider_info"`
+	ID              int64  `bun:"id,pk,autoincrement"`
+	ChainInfoID     int64  `bun:"chain_info_id,pk,notnull"`
+	Moniker         string `bun:"moniker"`
+	BTCPKs          string `bun:"btc_pk"`
+	OperatorAddress string `bun:"operator_address"`
+}
+
+func (vi FinalityProviderInfo) String() string {
+	return fmt.Sprintf("FinalityProviderInfo<%d %d %s %s %s>",
+		vi.ID,
+		vi.ChainInfoID,
+		vi.BTCPKs,
+		vi.OperatorAddress,
+		vi.Moniker,
+	)
+}
+
 type ValidatorInfo struct {
 	bun.BaseModel `bun:"table:meta.validator_info"`
 

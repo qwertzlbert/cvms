@@ -43,3 +43,22 @@ CREATE TABLE
     )
 PARTITION BY
     LIST ("chain_info_id");
+
+
+-- "moniker": "Cosmostation"
+-- "addr": "bbn1x5wgh6vwye60wv3dtshs9dmqggwfx2ldy7agnk"
+-- "btc_pk": "894add70131a47375ce48ff2adc969721c13b600f8726ad21ee018b9b97f4db4"
+CREATE TABLE
+    IF NOT EXISTS "meta"."finality_provider_info" (
+        "id" BIGINT GENERATED ALWAYS AS IDENTITY,
+        "chain_info_id" INT NOT NULL,
+        "moniker" TEXT NOT NULL, 
+        "operator_address" TEXT NOT NULL,
+        "btc_pk" VARCHAR(64) NOT NULL,
+        CONSTRAINT fk_chain_info_id FOREIGN KEY (chain_info_id) REFERENCES meta.chain_info(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        PRIMARY KEY ("id", "chain_info_id"),
+        CONSTRAINT uniq_btc_pk_by_chain UNIQUE (chain_info_id, btc_pk),
+        CONSTRAINT uniq_finality_operator_address_by_chain UNIQUE (chain_info_id, operator_address)
+    )
+PARTITION BY
+    LIST ("chain_info_id");
