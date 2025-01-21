@@ -15,10 +15,7 @@ import (
 	"github.com/cosmostation/cvms/internal/packages/duty/finality-provider-indexer/repository"
 )
 
-var (
-	supportedProtocolTypes = []string{"cosmos"}
-	subsystem              = "babylon_finality_provider_vote"
-)
+var subsystem = "babylon_finality_provider_vote"
 
 type FinalityProviderIndexer struct {
 	*common.Indexer
@@ -40,65 +37,61 @@ func NewFinalityProviderIndexer(p common.Packager) (*FinalityProviderIndexer, er
 }
 
 func (idx *FinalityProviderIndexer) Start() error {
-	if ok := helper.Contains(supportedProtocolTypes, idx.ProtocolType); ok {
-		err := idx.InitChainInfoID()
-		if err != nil {
-			return errors.Wrap(err, "failed to init chain_info_id")
-		}
-
-		alreadyInit, err := idx.repo.CheckIndexpoinerAlreadyInitialized(repository.IndexName, idx.ChainInfoID)
-		if err != nil {
-			return errors.Wrap(err, "failed to check init tables")
-		}
-		if !alreadyInit {
-			idx.Warnln("it's not initialized in the database, so that voteindexer will init for this package")
-			idx.repo.InitPartitionTablesByChainInfoID(repository.IndexName, idx.ChainID, idx.Lh.LatestHeight)
-			idx.repo.CreateFinalityProviderInfoPartitionTableByChainID(idx.ChainID)
-		}
-
-		// get last index pointer, index pointer is always initalize if not exist
-		initIndexPointer, err := idx.repo.GetLastIndexPointerByIndexTableName(repository.IndexName, idx.ChainInfoID)
-		if err != nil {
-			return errors.Wrap(err, "failed to get last index pointer")
-		}
-
-		err = idx.FetchValidatorInfoList()
-		if err != nil {
-			return errors.Wrap(err, "failed to fetch validator_info list")
-		}
-
-		idx.Infof("loaded index pointer(last saved height): %d", initIndexPointer.Pointer)
-		idx.Infof("initial vim length: %d for %s chain", len(idx.Vim), idx.ChainID)
-
-		// init indexer metrics
-		idx.initLabelsAndMetrics()
-		// go fetch new height in loop, it must be after init metrics
-		go idx.FetchLatestHeight()
-		// loop
-		go idx.Loop(initIndexPointer.Pointer)
-		// loop update recent miss counter metrics
-		// go func() {
-		// 	for {
-		// 		idx.Infoln("update recent miss counter metrics and sleep 5s sec...")
-		// 		idx.updateRecentMissCounterMetric()
-		// 		time.Sleep(time.Second * 5)
-		// 	}
-		// }()
-		// loop partion table time retention by env parameter
-		go func() {
-			if idx.RetentionPeriod == db.PersistenceMode {
-				idx.Infoln("skipped the postgres time retention")
-				return
-			}
-			for {
-				idx.Infof("for time retention, delete old records over %s and sleep %s", idx.RetentionPeriod, indexertypes.RetentionQuerySleepDuration)
-				idx.repo.DeleteOldFinalityProviderVoteList(idx.ChainID, idx.RetentionPeriod)
-				time.Sleep(indexertypes.RetentionQuerySleepDuration)
-			}
-		}()
-		return nil
+	err := idx.InitChainInfoID()
+	if err != nil {
+		return errors.Wrap(err, "failed to init chain_info_id")
 	}
 
+	alreadyInit, err := idx.repo.CheckIndexpoinerAlreadyInitialized(repository.IndexName, idx.ChainInfoID)
+	if err != nil {
+		return errors.Wrap(err, "failed to check init tables")
+	}
+	if !alreadyInit {
+		idx.Warnf("it's not initialized in the database, so that this package will initalize at %d as a init index point", idx.Lh.LatestHeight)
+		idx.repo.InitPartitionTablesByChainInfoID(repository.IndexName, idx.ChainID, idx.Lh.LatestHeight)
+		idx.repo.CreateFinalityProviderInfoPartitionTableByChainID(idx.ChainID)
+	}
+
+	// get last index pointer, index pointer is always initalize if not exist
+	initIndexPointer, err := idx.repo.GetLastIndexPointerByIndexTableName(repository.IndexName, idx.ChainInfoID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get last index pointer")
+	}
+
+	err = idx.FetchValidatorInfoList()
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch validator_info list")
+	}
+
+	idx.Infof("loaded index pointer(last saved height): %d", initIndexPointer.Pointer)
+	idx.Infof("initial vim length: %d for %s chain", len(idx.Vim), idx.ChainID)
+
+	// init indexer metrics
+	idx.initLabelsAndMetrics()
+	// go fetch new height in loop, it must be after init metrics
+	go idx.FetchLatestHeight()
+	// loop
+	go idx.Loop(initIndexPointer.Pointer)
+	// loop update recent miss counter metrics
+	// go func() {
+	// 	for {
+	// 		idx.Infoln("update recent miss counter metrics and sleep 5s sec...")
+	// 		idx.updateRecentMissCounterMetric()
+	// 		time.Sleep(time.Second * 5)
+	// 	}
+	// }()
+	// loop partion table time retention by env parameter
+	go func() {
+		if idx.RetentionPeriod == db.PersistenceMode {
+			idx.Infoln("skipped the postgres time retention")
+			return
+		}
+		for {
+			idx.Infof("for time retention, delete old records over %s and sleep %s", idx.RetentionPeriod, indexertypes.RetentionQuerySleepDuration)
+			idx.repo.DeleteOldFinalityProviderVoteList(idx.ChainID, idx.RetentionPeriod)
+			time.Sleep(indexertypes.RetentionQuerySleepDuration)
+		}
+	}()
 	return nil
 }
 
@@ -110,7 +103,7 @@ func (idx *FinalityProviderIndexer) Loop(indexPoint int64) {
 			healthAPIs := healthcheck.FilterHealthEndpoints(idx.APIs, idx.ProtocolType)
 			for _, api := range healthAPIs {
 				idx.SetAPIEndPoint(api)
-				idx.Warnf("API endpoint will be changed with health endpoint for this package: %s", api)
+				idx.Debugf("API endpoint will be changed with health endpoint for this package: %s", api)
 				isUnhealth = false
 				break
 			}
@@ -118,7 +111,7 @@ func (idx *FinalityProviderIndexer) Loop(indexPoint int64) {
 			healthRPCs := healthcheck.FilterHealthRPCEndpoints(idx.RPCs, idx.ProtocolType)
 			for _, rpc := range healthRPCs {
 				idx.SetRPCEndPoint(rpc)
-				idx.Warnf("RPC endpoint will be changed with health endpoint for this package: %s", rpc)
+				idx.Debugf("RPC endpoint will be changed with health endpoint for this package: %s", rpc)
 				isUnhealth = false
 				break
 			}
@@ -131,16 +124,13 @@ func (idx *FinalityProviderIndexer) Loop(indexPoint int64) {
 			}
 		}
 
-		// set new index point height
-		newIndexPointerHeight := indexPoint + 1
-
 		// trying to sync with new index pointer height
-		newIndexPointer, err := idx.batchSync(indexPoint, newIndexPointerHeight)
+		newIndexPointer, err := idx.batchSync(indexPoint)
 		if err != nil {
 			common.Health.With(idx.RootLabels).Set(0)
 			common.Ops.With(idx.RootLabels).Inc()
 			isUnhealth = true
-			idx.Errorf("failed to sync validators vote status in %d height: %s\nit will be retried after sleep %s...", indexPoint, err, indexertypes.AfterFailedFetchSleepDuration.String())
+			idx.Errorf("failed to sync in %d height: %s, it will be retried after sleep %s...", indexPoint, err, indexertypes.AfterFailedFetchSleepDuration.String())
 			time.Sleep(indexertypes.AfterFailedRetryTimeout)
 			continue
 		}
@@ -153,7 +143,7 @@ func (idx *FinalityProviderIndexer) Loop(indexPoint int64) {
 		common.Ops.With(idx.RootLabels).Inc()
 
 		// logging & sleep
-		if idx.Lh.LatestHeight > indexPoint {
+		if (idx.Lh.LatestHeight - 1) > indexPoint {
 			// when node catching_up is true, sleep 100 milli sec
 			idx.WithField("catching_up", true).
 				Infof("latest height is %d but updated index pointer is %d ... remaining %d blocks", idx.Lh.LatestHeight, indexPoint, (idx.Lh.LatestHeight - indexPoint))

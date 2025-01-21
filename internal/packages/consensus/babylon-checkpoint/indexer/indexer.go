@@ -15,10 +15,7 @@ import (
 	"github.com/cosmostation/cvms/internal/packages/consensus/babylon-checkpoint/repository"
 )
 
-var (
-	supportedProtocolTypes = []string{"cosmos"}
-	subsystem              = "babylon_checkpoint"
-)
+var subsystem = "babylon_checkpoint"
 
 type CheckpointIndexer struct {
 	*common.Indexer
@@ -43,67 +40,60 @@ func NewCheckpointIndexer(p common.Packager) (*CheckpointIndexer, error) {
 }
 
 func (idx *CheckpointIndexer) Start() error {
-	if ok := helper.Contains(supportedProtocolTypes, idx.ProtocolType); ok {
-		err := idx.InitChainInfoID()
-		if err != nil {
-			return errors.Wrap(err, "failed to init chain_info_id")
-		}
-
-		alreadyInit, err := idx.repo.CheckIndexpoinerAlreadyInitialized(repository.IndexName, idx.ChainInfoID)
-		if err != nil {
-			return errors.Wrap(err, "failed to check init tables")
-		}
-		if !alreadyInit {
-			idx.Warnln("it's not initialized in the database, so that indexer will init for this package")
-			idx.repo.InitPartitionTablesByChainInfoID(repository.IndexName, idx.ChainID, idx.earliestBlockHeight)
-		}
-
-		// get last index pointer, index pointer is always initalize if not exist
-		initIndexPointer, err := idx.repo.GetLastIndexPointerByIndexTableName(repository.IndexName, idx.ChainInfoID)
-		if err != nil {
-			return errors.Wrap(err, "failed to get last index pointer")
-		}
-
-		// get last epoch and save into indexer struct
-		lastDBEpoch, err := idx.repo.GetLastEpoch()
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		idx.Infof("loaded last db epoch: %d", lastDBEpoch)
-
-		err = idx.FetchValidatorInfoList()
-		if err != nil {
-			return errors.Wrap(err, "failed to fetch validator_info list")
-		}
-
-		idx.Infof("loaded index pointer(last saved height): %d", initIndexPointer.Pointer)
-		idx.Infof("initial vim length: %d for %s chain", len(idx.Vim), idx.ChainID)
-
-		// init indexer metrics
-		idx.initLabelsAndMetrics()
-
-		// NOTE: no need to sync lastest height in babylon checkpoint indexer
-		// go fetch new height in loop, it must be after init metrics
-		// go idx.FetchLatestHeight()
-
-		// loop
-		go idx.Loop(lastDBEpoch)
-		// loop partion table time retention by env parameter
-		go func() {
-			if idx.RetentionPeriod == db.PersistenceMode {
-				idx.Infoln("skipped the postgres time retention")
-				return
-			}
-			for {
-				idx.Infof("for time retention, delete old records over %s and sleep %s", idx.RetentionPeriod, indexertypes.RetentionQuerySleepDuration)
-				idx.repo.DeleteOldValidatorExtensionVoteList(idx.ChainID, idx.RetentionPeriod)
-				time.Sleep(indexertypes.RetentionQuerySleepDuration)
-			}
-		}()
-		return nil
+	err := idx.InitChainInfoID()
+	if err != nil {
+		return errors.Wrap(err, "failed to init chain_info_id")
 	}
 
+	alreadyInit, err := idx.repo.CheckIndexpoinerAlreadyInitialized(repository.IndexName, idx.ChainInfoID)
+	if err != nil {
+		return errors.Wrap(err, "failed to check init tables")
+	}
+	if !alreadyInit {
+		idx.Warnf("it's not initialized in the database, so that this package will initalize at %d as a init index point", idx.Lh.LatestHeight)
+		idx.repo.InitPartitionTablesByChainInfoID(repository.IndexName, idx.ChainID, idx.earliestBlockHeight)
+	}
+
+	// get last index pointer, index pointer is always initalize if not exist
+	initIndexPointer, err := idx.repo.GetLastIndexPointerByIndexTableName(repository.IndexName, idx.ChainInfoID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get last index pointer")
+	}
+
+	// get last epoch and save into indexer struct
+	lastDBEpoch, err := idx.repo.GetLastEpoch()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = idx.FetchValidatorInfoList()
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch validator_info list")
+	}
+
+	idx.Infof("loaded last db epoch: %d, index pointer: %d, loaded validator id map: %d", lastDBEpoch, initIndexPointer.Pointer, len(idx.Vim))
+
+	// init indexer metrics
+	idx.initLabelsAndMetrics()
+
+	// NOTE: no need to sync lastest height in babylon checkpoint indexer
+	// go fetch new height in loop, it must be after init metrics
+	// go idx.FetchLatestHeight()
+
+	// loop
+	go idx.Loop(lastDBEpoch)
+	// loop partion table time retention by env parameter
+	go func() {
+		if idx.RetentionPeriod == db.PersistenceMode {
+			idx.Infoln("skipped the postgres time retention")
+			return
+		}
+		for {
+			idx.Infof("for time retention, delete old records over %s and sleep %s", idx.RetentionPeriod, indexertypes.RetentionQuerySleepDuration)
+			idx.repo.DeleteOldValidatorExtensionVoteList(idx.ChainID, idx.RetentionPeriod)
+			time.Sleep(indexertypes.RetentionQuerySleepDuration)
+		}
+	}()
 	return nil
 }
 
@@ -115,7 +105,7 @@ func (idx *CheckpointIndexer) Loop(indexPoint int64) {
 			healthAPIs := healthcheck.FilterHealthEndpoints(idx.APIs, idx.ProtocolType)
 			for _, api := range healthAPIs {
 				idx.SetAPIEndPoint(api)
-				idx.Warnf("API endpoint will be changed with health endpoint for this package: %s", api)
+				idx.Debugf("API endpoint will be changed with health endpoint for this package: %s", api)
 				isUnhealth = false
 				break
 			}
@@ -123,7 +113,7 @@ func (idx *CheckpointIndexer) Loop(indexPoint int64) {
 			healthRPCs := healthcheck.FilterHealthRPCEndpoints(idx.RPCs, idx.ProtocolType)
 			for _, rpc := range healthRPCs {
 				idx.SetRPCEndPoint(rpc)
-				idx.Warnf("RPC endpoint will be changed with health endpoint for this package: %s", rpc)
+				idx.Debugf("RPC endpoint will be changed with health endpoint for this package: %s", rpc)
 				isUnhealth = false
 				break
 			}
@@ -141,7 +131,7 @@ func (idx *CheckpointIndexer) Loop(indexPoint int64) {
 			common.Health.With(idx.RootLabels).Set(0)
 			common.Ops.With(idx.RootLabels).Inc()
 			isUnhealth = true
-			idx.Errorf("failed to sync validators vote status in %d epoch: %s\nit will be retried after sleep %s...",
+			idx.Errorf("failed to sync status in %d epoch: %s, it will be retried after sleep %s...",
 				indexPoint, err, indexertypes.AfterFailedRetryTimeout.String(),
 			)
 			time.Sleep(indexertypes.AfterFailedRetryTimeout)

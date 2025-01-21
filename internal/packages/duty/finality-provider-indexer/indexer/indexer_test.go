@@ -83,7 +83,7 @@ func TestBatchSync(t *testing.T) {
 	err = idx.FetchValidatorInfoList()
 	assert.NoError(t, err)
 
-	newIndexPointer, err := idx.batchSync(94810, 94820)
+	newIndexPointer, err := idx.batchSync(94810)
 	assert.NoError(t, err)
 	t.Logf("new index point: %d", newIndexPointer)
 }
