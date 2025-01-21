@@ -14,6 +14,7 @@ var (
 		"voteindexer",
 		"veindexer",
 		"babylon_checkpoint",
+		"finality_provider_indexer",
 	}
 
 	ExporterPackages = []string{
