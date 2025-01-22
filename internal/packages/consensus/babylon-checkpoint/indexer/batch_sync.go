@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmostation/cvms/internal/common/api"
 	"github.com/cosmostation/cvms/internal/common/function"
 	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
@@ -238,58 +239,35 @@ func makeBabylonExtensionVote(
 ) ([]model.BabylonVoteExtension, error) {
 	bevList := make([]model.BabylonVoteExtension, 0)
 	for _, vote := range votes {
-		status := BlockFlagSwitcher(vote.BlockIDFlag)
+		status := int64(tmtypes.BlockIDFlag_value[vote.BlockIDFlag])
 		hexAddress, err := base64.StdEncoding.DecodeString(vote.Validator.Address)
 		if err != nil {
 			return nil, errors.New("failed to make babylon extension vote")
 		}
+
 		validatorAddress := fmt.Sprintf("%X", hexAddress)
 		if vote.ExtensionSignature == "" {
-			vml.Debugf(
-				`found miss validator idx: %d, address: %s in this %d height`,
-				validatorIDMap[validatorAddress], validatorAddress, blockHeight,
-			)
-			validatorHexAddressID, exist := validatorIDMap[validatorAddress]
-			if !exist {
-				vml.Debugf("debug: %v", vote)
-				return nil, errors.New("failed to find missed validators hex address id in validator id maps")
-			}
-			bevList = append(bevList, model.BabylonVoteExtension{
-				ChainInfoID:           chainInfoID,
-				Epoch:                 epoch,
-				Height:                blockHeight,
-				Timestamp:             blockTimestamp,
-				ValidatorHexAddressID: validatorHexAddressID,
-				Status:                status,
-			})
-		} else {
-			validatorHexAddressID, exist := validatorIDMap[validatorAddress]
-			if !exist {
-				vml.Debugf("debug: %v", vote)
-				return nil, errors.New("failed to find missed validators hex address id in validator id maps")
-			}
-			// for committed voters
-			bevList = append(bevList, model.BabylonVoteExtension{
-				ChainInfoID:           chainInfoID,
-				Epoch:                 epoch,
-				Height:                blockHeight,
-				Timestamp:             blockTimestamp,
-				ValidatorHexAddressID: validatorHexAddressID,
-				Status:                status,
-			})
+			vml.Debugf(`found miss validator idx: %d, address: %s in this %d height`, validatorIDMap[validatorAddress], validatorAddress, blockHeight)
 		}
+
+		validatorHexAddressID, exist := validatorIDMap[validatorAddress]
+		if !exist {
+			vml.Debugf("debug: %v", vote)
+			return nil, errors.New("failed to find missed validators hex address id in validator id maps")
+		}
+
+		// for committed voters
+		bevList = append(bevList, model.BabylonVoteExtension{
+			ChainInfoID:           chainInfoID,
+			Epoch:                 epoch,
+			Height:                blockHeight,
+			Timestamp:             blockTimestamp,
+			ValidatorHexAddressID: validatorHexAddressID,
+			Status:                status,
+		})
 	}
 
 	return bevList, nil
-}
-
-func BlockFlagSwitcher(flag string) int64 {
-	switch flag {
-	case "BLOCK_ID_FLAG_COMMIT":
-		return 1
-	default:
-		return 0
-	}
 }
 
 func filterValidatorVoteListByMonikers(monikerIDMap indexertypes.MonikerIDMap, bevList []model.BabylonVoteExtension) []model.BabylonVoteExtension {
