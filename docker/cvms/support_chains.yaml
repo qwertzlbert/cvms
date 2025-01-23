@@ -178,7 +178,8 @@ bbn-test-5:
     - uptime
     - voteindexer
     - babylon_checkpoint
-    - finality_provider_indexer
+    - finality-provider-indexer
+    - finality-provider-uptime
 bitcanna-1:
   chain_name: bitcanna
   protocol_type: cosmos
