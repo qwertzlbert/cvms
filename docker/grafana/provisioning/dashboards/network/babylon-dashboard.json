@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 6,
   "links": [],
   "panels": [
     {
@@ -40,7 +40,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<!-- Main content -->\n<div style=\"display: flex; justify-content: space-between; align-items: center;\">\n  <!-- H2 with a link -->\n   <a href=\"https://github.com/cosmostation/cvms\" target=\"_blank\" style=\"text-decoration: none; color: inherit;\">\n    <h2 style=\"margin-right: 10px;\">Cosmos Validator Monitoring Service (CVMS) 🌌 🔭</h2>\n  </a> \n  <!-- \"Powered by Cosmostation\" on the right -->\n  <div style=\"display: flex; align-items: center;\">\n    <a href=\"https://cosmostation.io\" target=\"_blank\" style=\"text-decoration: none; color: inherit;\">\n        <span>Powered by Cosmostation </span>\n        <img src=\"https://raw.githubusercontent.com/cosmostation/chainlist/refs/heads/main/resource/cosmostation/cosmostation_color.svg\" alt=\"Logo\" style=\"height: 30px; margin-left: 5px;\">\n    </a>\n  </div>\n</div>\n\n<!-- Paragraph below the header -->\n<p>\n  The Cosmos Validator Monitoring Service (CVMS) is an open-source, integrated monitoring system designed for validators and network in the Cosmos app chain ecosystem.<br/>\n  This public dashboard is part of the beta launch, with the open-source repository coming soon.\n</p>\n<p>\n  <a href=\"https://public-cosmos-vms.cosmostation.io/d/be37h6ce99dz4e/network-duty-dashboard?from=now-30m\" target=\"_blank\" style=\"text-decoration: none; color: #1E90FF;\">\n    👉 Validator Duty Overview Click Here\n  </a> \n  <a href=\"https://public-cosmos-vms.cosmostation.io\" target=\"_blank\" style=\"text-decoration: none; color: #1E90FF;\">\n    👉 Validator Consensus Overview Click Here\n  </a> \n</p>",
+        "content": "<!-- Main content -->\n<div style=\"display: flex; justify-content: space-between; align-items: center;\">\n  <!-- H2 with a link -->\n   <a href=\"https://github.com/cosmostation/cvms\" target=\"_blank\" style=\"text-decoration: none; color: inherit;\">\n    <h2 style=\"margin-right: 10px;\">Cosmos Validator Monitoring Service (CVMS) 🌌 🔭</h2>\n  </a> \n  <!-- \"Powered by Cosmostation\" on the right -->\n  <div style=\"display: flex; align-items: center;\">\n    <a href=\"https://cosmostation.io\" target=\"_blank\" style=\"text-decoration: none; color: inherit;\">\n        <span>Powered by Cosmostation </span>\n        <img src=\"https://raw.githubusercontent.com/cosmostation/chainlist/refs/heads/main/resource/cosmostation/cosmostation_color.svg\" alt=\"Logo\" style=\"height: 30px; margin-left: 5px;\">\n    </a>\n  </div>\n</div>\n\n<!-- Paragraph below the header -->\n<p>\n  The Cosmos Validator Monitoring Service (CVMS) is an open-source, integrated monitoring system designed for validators and network in the Cosmos app chain ecosystem.<br/>\n  This public dashboard is a playground for developers and beta release testing for CVMS.\n</p>\n<p>\n  <a href=\"https://github.com/cosmostation/cvms\" target=\"_blank\" style=\"text-decoration: none; color: #1E90FF;\">\n    👉 CVMS Github Link Here!\n  </a> \n  <a href=\"https://github.com/cosmostation/cvms/blob/release/docs/setup.md\" target=\"_blank\" style=\"text-decoration: none; color: #1E90FF;\">\n    👉 CVMS Setup Guide Here!!\n  </a> \n</p>",
         "mode": "html"
       },
       "pluginVersion": "11.3.0",
@@ -72,8 +72,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 39,
-        "w": 24,
+        "h": 34,
+        "w": 12,
         "x": 0,
         "y": 5
       },
@@ -122,7 +122,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": ";  -- Order in ascending order for the last 100 blocks\nWITH max_height AS (\n  SELECT MAX(height) AS highest_height\n  FROM babylon_finality_provider_${chain_id}\n)\nSELECT\n  bfp.height,\n  bfp.status,\n  fpi.moniker AS moniker,\n  fpi.operator_address as address,\n  fpi.btc_pk as btc_pk\nFROM\n  babylon_finality_provider_${chain_id} bfp\nJOIN\n  meta.finality_provider_info fpi\n  ON bfp.finality_provider_pk_id = fpi.id\nJOIN\n  max_height mh  -- Join to get the maximum block height\n  ON bfp.height BETWEEN (mh.highest_height - 100) AND mh.highest_height\nORDER by\n  bfp.height ASC\n  \n  ",
+          "rawSql": ";  -- Order in ascending order for the last 100 blocks\nWITH max_height AS (\n  SELECT MAX(height) AS highest_height\n  FROM babylon_finality_provider_${chain_id}\n)\nSELECT\n  bfp.height,\n  bfp.status,\n  fpi.moniker AS moniker,\n  fpi.operator_address as address,\n  fpi.btc_pk as btc_pk\nFROM\n  babylon_finality_provider_${chain_id} bfp\nJOIN\n  meta.finality_provider_info fpi\n  ON bfp.finality_provider_pk_id = fpi.id\nJOIN\n  max_height mh  -- Join to get the maximum block height\n  ON bfp.height BETWEEN (mh.highest_height - 50) AND mh.highest_height\nORDER by\n  bfp.height ASC\n  \n  ",
           "refId": "A",
           "sql": {
             "columns": [
@@ -148,12 +148,132 @@
       "type": "nline-plotlyjs-panel"
     },
     {
+      "datasource": {
+        "default": true,
+        "type": "prometheus",
+        "uid": "cvms_exporter_db"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "decimals": 1,
+          "fieldMinMax": false,
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "${__field.labels.moniker}"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 34,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cvms_exporter_db"
+          },
+          "editorMode": "code",
+          "expr": "round(1 - cvms_finality_provider_uptime_missed_blocks_counter / on (chain_id) group_left cvms_finality_provider_uptime_signed_blocks_window, 0.001) * 100",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Finality Provider Uptime Trend",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 39
       },
       "id": 5,
       "panels": [],
@@ -174,7 +294,7 @@
         "h": 40,
         "w": 12,
         "x": 0,
-        "y": 45
+        "y": 40
       },
       "id": 8,
       "options": {
@@ -261,7 +381,7 @@
         "h": 40,
         "w": 12,
         "x": 12,
-        "y": 45
+        "y": 40
       },
       "id": 4,
       "options": {

@@ -14,7 +14,7 @@ var (
 		"voteindexer",
 		"veindexer",
 		"babylon_checkpoint",
-		"finality_provider_indexer",
+		"finality-provider-indexer",
 	}
 
 	ExporterPackages = []string{
@@ -25,7 +25,7 @@ var (
 		// utility
 		"balance", "upgrade",
 		// duty
-		"axelar-evm", "eventnonce", "oracle", "yoda",
+		"axelar-evm", "eventnonce", "oracle", "yoda", "finality-provider-uptime",
 	}
 )
 

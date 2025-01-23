@@ -19,4 +19,5 @@ const (
 	OrchestratorAddressLabel = "orchestrator_address"
 	BalanceAddressLabel      = "balance_address"
 	UpgradeNameLabel         = "upgrade_name"
+	BTCPKLabel               = "btc_pk"
 )

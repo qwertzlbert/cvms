@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	commonapi "github.com/cosmostation/cvms/internal/common/api"
 	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
 	"github.com/cosmostation/cvms/internal/helper"
 	"github.com/cosmostation/cvms/internal/packages/duty/finality-provider-indexer/model"
@@ -49,7 +50,7 @@ func (idx *FinalityProviderIndexer) batchSync(lastIndexPointerHeight int64) (
 			defer wg.Done()
 
 			// get current block for collecting last commit signatures
-			fps, err := GetFinalityProviderByHeight(idx.CommonClient, missedHeight)
+			fps, err := commonapi.GetActiveFinalityProviderByHeight(idx.CommonClient, missedHeight)
 			if err != nil {
 				idx.Errorf("failed to call at %d height data, %s", missedHeight, err)
 				ch <- helper.Result{Item: nil, Success: false}
@@ -63,7 +64,7 @@ func (idx *FinalityProviderIndexer) batchSync(lastIndexPointerHeight int64) (
 			}
 
 			// get previous tendermint validators for collecting  validators' hex address
-			btcPKs, err := GetFinalityVotesByHeight(idx.CommonClient, missedHeight)
+			btcPKs, err := commonapi.GetFinalityVotesByHeight(idx.CommonClient, missedHeight)
 			if err != nil {
 				idx.Errorf("failed to call at %d height data, %s", height, err)
 				ch <- helper.Result{Item: nil, Success: false}

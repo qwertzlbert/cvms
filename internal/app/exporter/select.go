@@ -15,6 +15,7 @@ import (
 	// validator duty packages
 	axelarevm "github.com/cosmostation/cvms/internal/packages/duty/axelar-evm/collector"
 	eventnonce "github.com/cosmostation/cvms/internal/packages/duty/eventnonce/collector"
+	fpuptime "github.com/cosmostation/cvms/internal/packages/duty/finality-provider-uptime/collector"
 	oracle "github.com/cosmostation/cvms/internal/packages/duty/oracle/collector"
 	yoda "github.com/cosmostation/cvms/internal/packages/duty/yoda/collector"
 
@@ -131,6 +132,16 @@ func selectPackage(
 			p.SetConsumer()
 		}
 		return uptime.Start(*p)
+	case pkg == "finality-provider-uptime":
+		endpoints := common.Endpoints{
+			RPCs: validRPCs, CheckRPC: true,
+			APIs: validAPIs, CheckAPI: true,
+		}
+		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
+		if err != nil {
+			return errors.Wrap(err, common.ErrFailedToBuildPackager)
+		}
+		return fpuptime.Start(*p)
 	}
 	// NOTE: contract package is not using now, but it could be enabled if it needs
 	// case strings.Contains(packageName, "contract"):

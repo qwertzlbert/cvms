@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
+	commonparser "github.com/cosmostation/cvms/internal/common/parser"
 	"github.com/cosmostation/cvms/internal/helper/logger"
 	"github.com/cosmostation/cvms/internal/packages/duty/finality-provider-indexer/repository"
 	"github.com/go-resty/resty/v2"
@@ -106,35 +106,6 @@ func TestGetFinalityProvidersInfo(t *testing.T) {
 	}
 }
 
-func TestCheckMissCounterLogic(t *testing.T) {
-	requester := resty.New().
-		SetBaseURL(BabylonBaseURL).
-		R().
-		SetContext(context.Background())
-
-	// set header for current height
-	heightStr := strconv.FormatInt(47020, 10)
-	header := map[string]string{"Content-Type": "application/json", "x-cosmos-block-height": heightStr}
-	requester.SetHeaders(header)
-
-	resp, err := requester.Get("/babylon/finality/v1/signing_infos")
-	assert.NoErrorf(t, err, "error from : %s", resp.Request.URL)
-
-	fpSigningInfos, err := ParserFinalityProviderSigningInfos(resp.Body())
-	assert.NoErrorf(t, err, "error from : %s", resp.Request.URL)
-
-	for _, fp := range fpSigningInfos.SigningInfos {
-		fmt.Printf("  FP BTC PK Hex: %s\n", fp.FPBTCPkHex)
-		fmt.Printf("  Start Height: %s\n", fp.StartHeight)
-		fmt.Printf("  Missed Blocks Counter: %s\n", fp.MissedBlocksCounter)
-		fmt.Printf("  Jailed Until: %s\n", fp.JailedUntil)
-		break
-	}
-
-	fmt.Println("\nPagination:")
-	fmt.Printf("  Total: %s\n", fpSigningInfos.Pagination.Total)
-}
-
 const TestingHeight = 93329
 
 func TestCheckNonVotingFds(t *testing.T) {
@@ -145,7 +116,7 @@ func TestCheckNonVotingFds(t *testing.T) {
 	resp, err := requester.Get(fmt.Sprintf("/babylon/finality/v1/finality_providers/%d", TestingHeight))
 	assert.NoErrorf(t, err, "error from : %s", resp.Request.URL)
 
-	fps, err := ParseFinalityProviders(resp.Body())
+	fps, err := commonparser.ParseFinalityProviders(resp.Body())
 	assert.NoErrorf(t, err, "error from : %s", resp.Request.URL)
 
 	// make a map by fp votes
@@ -158,7 +129,7 @@ func TestCheckNonVotingFds(t *testing.T) {
 	resp, err = requester.Get(fmt.Sprintf("/babylon/finality/v1/votes/%d", TestingHeight))
 	assert.NoErrorf(t, err, "error from : %s", resp.Request.URL)
 
-	votes, err := ParseFinalityProviderVotings(resp.Body())
+	votes, err := commonparser.ParseFinalityProviderVotings(resp.Body())
 	assert.NoError(t, err)
 
 	// if the pk is existed in the votings, update the value for fp
