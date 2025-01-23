@@ -5,10 +5,11 @@ import (
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+
 	// Below are necessary imports for the cosmos SDK types
 	// Otherwise we would have to manually import the relevant SDK types
-	// _ "cosmossdk.io/api/cosmos/crypto/ed25519"
-	// _ "cosmossdk.io/api/cosmos/crypto/secp256k1"
+	_ "cosmossdk.io/api/cosmos/crypto/ed25519"
+	_ "cosmossdk.io/api/cosmos/crypto/secp256k1"
 )
 
 type CosmosAnyMessageResolver struct {

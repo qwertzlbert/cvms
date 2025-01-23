@@ -46,6 +46,7 @@ func GetBlockStatus(
 	blockHeight, blockTimeStamp, err := CommonBlockParser(resp)
 	if err != nil {
 		c.Errorf("parser error: %s", err)
+		c.Debugf("received response: %s", string(resp))
 		return types.CommonBlock{}, common.ErrFailedJsonUnmarshal
 	}
 

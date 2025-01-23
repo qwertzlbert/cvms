@@ -23,7 +23,7 @@ func ResolveMessage(fullMethodName string, rcli *grpcreflect.Client) (protorefle
 
 	sdesc, err := rcli.ResolveService(serviceName)
 	if err != nil {
-		return nil, fmt.Errorf("service couldn't be resolve: %v: %v", err, serviceName)
+		return nil, fmt.Errorf("service couldn't be resolved: %v: %v", err, serviceName)
 	}
 	mdesc := sdesc.UnwrapService().Methods().ByName(protoreflect.Name(methodName))
 
