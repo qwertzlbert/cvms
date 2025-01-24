@@ -2,17 +2,23 @@ package common
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"strings"
 
 	"github.com/cosmostation/cvms/internal/helper/logger"
 	"github.com/go-resty/resty/v2"
+
 	"github.com/jhump/protoreflect/grpcreflect"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/dynamicpb"
 
@@ -107,12 +113,35 @@ func (gc *GrpcClient) SetLogger(logger *logrus.Logger) Client {
 // Basically returns a new GrpcClient instance as it does not
 // support changing the endpoint
 func (gc *GrpcClient) SetEndpoint(endpoint string) Client {
-	client, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	var dialOptions []grpc.DialOption
+
+	tlsConf := &tls.Config{
+		NextProtos: []string{"h2"}, // only allow HTTP/2
+		MinVersion: tls.VersionTLS12,
+	}
+	gCreds := credentials.NewTLS(tlsConf)
+
+	// Simple handshake check to determine if the server supports TLS
+	_, err := tls.Dial("tcp", endpoint, tlsConf)
 	if err != nil {
-		gc.logger.Errorf("grpc request error: %s", err.Error())
+		var recordHeaderError tls.RecordHeaderError
+		if errors.As(err, &recordHeaderError) {
+			gc.logger.Warnf("TLS handshake failed")
+			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+		} else {
+			gc.logger.Errorf("error setting up gRPC connection: %s", err.Error())
+		}
+	} else {
+		dialOptions = append(dialOptions, grpc.WithTransportCredentials(gCreds))
+	}
+
+	client, err := grpc.NewClient(endpoint, dialOptions...)
+	if err != nil {
+		gc.logger.Errorf("error setting up grpc client: %s", err.Error())
 		return nil
 	}
-	// defer client.Close()
 	gc.client = client
 	gc.endpoint = endpoint
 	return gc
@@ -139,19 +168,27 @@ func (gc *GrpcClient) Get(ctx context.Context, uri string) ([]byte, error) {
 func (gc *GrpcClient) Post(ctx context.Context, uri string, body ...[]byte) ([]byte, error) {
 
 	var protoResolver grpchelper.CosmosAnyMessageResolver
-	var headerMD metadata.MD
+	// var reflectionHeader metadata.MD
+	var respHeader metadata.MD
+
 	if body == nil {
 		gc.logger.Errorf("grpc api requires a body for POST request. Use Get method instead.")
 		return nil, errors.New("grpc api requires a body for POST request")
 	}
 
+	// wakes up the client if it's not ready
+	if gc.client.GetState() != connectivity.Ready {
+		gc.logger.Info("grpc client is not ready yet. Waking up...")
+		gc.client.Connect()
+	}
+
+	refCtx := metadata.NewOutgoingContext(ctx, make(metadata.MD))
+
 	reflectionClient := grpcreflect.NewClientAuto(
-		metadata.NewOutgoingContext(ctx, headerMD),
+		refCtx,
 		gc.client,
 	)
 
-	idx := strings.LastIndex(uri, ".")
-	fullMethodName := uri[:idx] + "/" + uri[idx+1:]
 	descriptor, err := grpchelper.ResolveMessage(uri, reflectionClient)
 	if err != nil {
 		gc.logger.Errorf("grpc api failed to resolve proto message: %s", err.Error())
@@ -165,12 +202,23 @@ func (gc *GrpcClient) Post(ctx context.Context, uri string, body ...[]byte) ([]b
 	}
 
 	response := dynamicpb.NewMessage(descriptor.Output())
-	err = gc.client.Invoke(ctx, fullMethodName, msg, response, grpc.Header(&headerMD))
+	idx := strings.LastIndex(uri, ".")
+	fullMethodName := "/" + uri[:idx] + "/" + uri[idx+1:]
+	peer := &peer.Peer{}
+	gc.logger.Debugf("Invoking method: %s", fullMethodName)
+	err = gc.client.Invoke(ctx, fullMethodName, msg, response, grpc.Header(&respHeader), grpc.Peer(peer))
+	gc.logger.Debugf(
+		"GRPC connection info: Protocol: %s Target: %s Local Address: %s Authentication Type: %s",
+		peer.Addr.Network(),
+		peer.Addr.String(),
+		peer.LocalAddr.String(),
+		peer.AuthInfo.AuthType(),
+	)
+	gc.logger.Debugf("GRPC header returned: %+v", respHeader)
 	if err != nil {
-		gc.logger.Errorf("grpc api failed to invoke rpc: %s", err.Error())
+		gc.logger.Errorf("failed to invoke grpc request: %s", err.Error())
 		return nil, err
 	}
-
 	marshaller := protojson.MarshalOptions{
 		AllowPartial:    true,
 		Indent:          "  ",
@@ -184,7 +232,6 @@ func (gc *GrpcClient) Post(ctx context.Context, uri string, body ...[]byte) ([]b
 		gc.logger.Errorf("grpc api failed to marshal string with grpc data: %s", err.Error())
 		return nil, err
 	}
-
 	return respJSON, nil
 }
 
