@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/cosmostation/cvms/internal/common"
+	"github.com/cosmostation/cvms/internal/common/client"
 	"github.com/cosmostation/cvms/internal/helper/logger"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
@@ -84,9 +85,9 @@ func GetTestExporter() *common.Exporter {
 	l := logger.GetTestLogger()
 	restyLogger := logrus.New()
 	restyLogger.Out = io.Discard
-	RPCClient := common.NewRestyClient().SetLogger(restyLogger)
-	APIClient := common.NewRestyClient().SetLogger(restyLogger)
-	GRPCClient := common.NewGrpcClient().SetLogger(restyLogger)
+	RPCClient := client.NewRestyClient().SetLogger(restyLogger)
+	APIClient := client.NewRestyClient().SetLogger(restyLogger)
+	GRPCClient := client.NewGrpcClient().SetLogger(restyLogger)
 	entry := l.WithField("mode", "test")
 	monikers := []string{"Cosmostation"}
 	commonClient := common.CommonClient{
