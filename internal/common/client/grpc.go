@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"strings"
 
-	grpchelper "github.com/cosmostation/cvms/internal/helper/grpc"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -16,7 +16,14 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
+
+	// Below are necessary imports for the cosmos SDK types
+	// Otherwise we would have to manually import the relevant SDK types
+	_ "cosmossdk.io/api/cosmos/crypto/ed25519"
+	_ "cosmossdk.io/api/cosmos/crypto/secp256k1"
 )
 
 type GrpcClient struct {
@@ -87,7 +94,7 @@ func (gc *GrpcClient) Get(ctx context.Context, uri string) ([]byte, error) {
 
 func (gc *GrpcClient) Post(ctx context.Context, uri string, body ...[]byte) ([]byte, error) {
 
-	var protoResolver grpchelper.CosmosAnyMessageResolver
+	var protoResolver CosmosAnyMessageResolver
 	// var reflectionHeader metadata.MD
 	var respHeader metadata.MD
 
@@ -109,13 +116,13 @@ func (gc *GrpcClient) Post(ctx context.Context, uri string, body ...[]byte) ([]b
 		gc.client,
 	)
 
-	descriptor, err := grpchelper.ResolveMessage(uri, reflectionClient)
+	descriptor, err := resolveMessage(uri, reflectionClient)
 	if err != nil {
 		gc.logger.Errorf("grpc api failed to resolve proto message: %s", err.Error())
 		return nil, err
 	}
 
-	msg, err := grpchelper.CreateMessage(descriptor, string(body[0]))
+	msg, err := createMessage(descriptor, string(body[0]))
 	if err != nil {
 		gc.logger.Errorf("grpc api failed to create proto message: %s", err.Error())
 		return nil, err
@@ -162,4 +169,64 @@ func (gc *GrpcClient) Post(ctx context.Context, uri string, body ...[]byte) ([]b
 func NewGrpcClient() *GrpcClient {
 	gc := &GrpcClient{}
 	return gc
+}
+
+// Internal non-public helper methods originally part of the
+// grpchelper package
+
+// grpc reflection helper methods
+func resolveMessage(fullMethodName string, rcli *grpcreflect.Client) (protoreflect.MethodDescriptor, error) {
+	// assume that fully-qualified method name cosists of
+	// FULL_SERVER_NAME + "." + METHOD_NAME
+	// so split the last dot to get service name
+	n := strings.LastIndex(fullMethodName, ".")
+	if n < 0 {
+		return nil, fmt.Errorf("invalid method name: %v", fullMethodName)
+	}
+	serviceName := fullMethodName[0:n]
+	methodName := fullMethodName[n+1:]
+
+	sdesc, err := rcli.ResolveService(serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("service couldn't be resolved: %v: %v", err, serviceName)
+	}
+	mdesc := sdesc.UnwrapService().Methods().ByName(protoreflect.Name(methodName))
+
+	if mdesc == nil {
+		return nil, fmt.Errorf("method couldn't be found")
+	}
+
+	return mdesc, nil
+}
+
+func createMessage(mdesc protoreflect.MethodDescriptor, inputJsonString string) (*dynamicpb.Message, error) {
+
+	msg := dynamicpb.NewMessage(mdesc.Input())
+	if err := protojson.Unmarshal([]byte(inputJsonString), msg); err != nil {
+		return nil, fmt.Errorf("unmarshal %v", err)
+	}
+	return msg, nil
+}
+
+// grpc resolver to decode protobuf messages
+type CosmosAnyMessageResolver struct {
+	protoregistry.MessageTypeResolver
+	protoregistry.ExtensionTypeResolver
+}
+
+// Every resolver MUST implement the FindMessageByURL method. This message will be called by the
+// Marshaller to resolve the message.
+func (r CosmosAnyMessageResolver) FindMessageByURL(typeURL string) (protoreflect.MessageType, error) {
+	// Only the part of typeUrl after the last slash is relevant.
+	mname := typeURL
+	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
+		mname = mname[slash+1:]
+	}
+
+	a, err := protoregistry.GlobalTypes.FindMessageByURL(mname)
+	if err != nil {
+		return nil, err
+	}
+
+	return a, nil
 }
