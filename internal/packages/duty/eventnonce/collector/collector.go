@@ -31,6 +31,7 @@ func Start(p common.Packager) error {
 		for _, baseURL := range p.GRPCs {
 			client := common.NewExporter(p)
 			client.SetGRPCEndPoint(baseURL)
+			client.Debugf("Endpoint: %s", client.GetGRPCEndPoint())
 			go loop(client, p)
 			break
 		}

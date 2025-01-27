@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/hex"
-	"net/http"
 	"sort"
 	"strconv"
 	"sync"
@@ -48,7 +47,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 	defer cancel()
 
 	// create requester
-	requester := c.APIClient.R().SetContext(ctx)
+	requester := c.APIClient
 
 	// 2. extract bech32 valcons prefix using staking validator address
 	var bech32ValconsPrefix string
@@ -104,7 +103,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 			defer helper.HandleOutOfNilResponse(c.Entry)
 			defer wg.Done()
 
-			resp, err := requester.Get(queryPath)
+			resp, err := requester.Get(ctx, queryPath)
 			if err != nil {
 				if resp == nil {
 					ch <- helper.Result{Item: nil, Success: false}
@@ -114,13 +113,8 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 				ch <- helper.Result{Item: nil, Success: false}
 				return
 			}
-			if resp.StatusCode() != http.StatusOK {
-				c.Errorf("errors: unexpected status code %d at %s", resp.StatusCode(), resp.Request.URL)
-				ch <- helper.Result{Item: nil, Success: false}
-				return
-			}
 
-			_, _, isTomstoned, missedBlocksCounter, err := parser(resp.Body())
+			_, _, isTomstoned, missedBlocksCounter, err := parser(resp)
 			if err != nil {
 				c.Errorf("errors: %s", err)
 				ch <- helper.Result{Item: nil, Success: false}
@@ -179,7 +173,7 @@ func getConsumerValidatorUptimeStatus(
 	defer cancel()
 
 	// create requester
-	requester := app.APIClient.R().SetContext(ctx)
+	requester := app.APIClient
 
 	// 5. init channel and waitgroup for go-routine
 	ch := make(chan helper.Result)
@@ -200,7 +194,7 @@ func getConsumerValidatorUptimeStatus(
 			defer helper.HandleOutOfNilResponse(app.Entry)
 			defer wg.Done()
 
-			resp, err := requester.Get(uptimeQueryPath)
+			resp, err := requester.Get(ctx, uptimeQueryPath)
 			if err != nil {
 				if resp == nil {
 					ch <- helper.Result{Item: nil, Success: false}
@@ -209,12 +203,8 @@ func getConsumerValidatorUptimeStatus(
 				ch <- helper.Result{Item: nil, Success: false}
 				return
 			}
-			if resp.StatusCode() != http.StatusOK {
-				ch <- helper.Result{Item: nil, Success: false}
-				return
-			}
 
-			_, _, isTomstoned, missedBlocksCounter, err := commonparser.CosmosSlashingParser(resp.Body())
+			_, _, isTomstoned, missedBlocksCounter, err := commonparser.CosmosSlashingParser(resp)
 			if err != nil {
 				ch <- helper.Result{Item: nil, Success: false}
 				return
@@ -283,16 +273,13 @@ func getUptimeParams(c common.CommonClient, chainName string) (
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(queryPath)
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, queryPath)
 	if err != nil {
 		return 0, 0, errors.Cause(err)
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return 0, 0, errors.Errorf("api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
 
-	signedBlocksWindow, minSignedPerWindow, err := parser(resp.Body())
+	signedBlocksWindow, minSignedPerWindow, err := parser(resp)
 	if err != nil {
 		return 0, 0, errors.Cause(err)
 	}
