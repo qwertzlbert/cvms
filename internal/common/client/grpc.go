@@ -30,6 +30,7 @@ type GrpcClient struct {
 	client   *grpc.ClientConn
 	endpoint string
 	logger   *logrus.Logger
+	headers  map[string]string
 }
 
 func (gc *GrpcClient) SetLogger(logger *logrus.Logger) Client {
@@ -72,6 +73,11 @@ func (gc *GrpcClient) SetEndpoint(endpoint string) Client {
 	gc.client = client
 	gc.endpoint = endpoint
 	return gc
+}
+
+func (gc *GrpcClient) SetHeaders(headers map[string]string) {
+	gc.headers = headers
+	gc.logger.Warnf("setting headers not implemented in grpc client yet!")
 }
 
 func (gc *GrpcClient) GetEndpoint() (string, error) {

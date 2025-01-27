@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -78,9 +77,6 @@ func GetValidators(c common.CommonClient, height ...int64) ([]types.CosmosValida
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	// create requester
-	// requester := c.RPCClient.R().SetContext(ctx)
-
 	totalValidators := make([]types.CosmosValidator, 0)
 	var queryPath string
 	page := 1
@@ -132,25 +128,19 @@ func GetStakingValidatorsByHeight(c common.CommonClient, chainName string, heigh
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	// create requester
-	requester := c.APIClient.R().SetContext(ctx)
-
 	// set header by block height
 	heightStr := strconv.FormatInt(height, 10)
 	header := map[string]string{"Content-Type": "application/json", "x-cosmos-block-height": heightStr}
-	requester.SetHeaders(header)
+	c.APIClient.SetHeaders(header)
 
 	// get on-chain validators in staking module
-	resp, err := requester.Get(queryPath)
+	resp, err := c.APIClient.Get(ctx, queryPath)
 	if err != nil {
 		// c.Errorf("api error: %s", err)
 		return nil, errors.Wrap(err, "failed in api")
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Errorf("got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
 
-	stakingValidators, err := stakingValidatorParser(resp.Body())
+	stakingValidators, err := stakingValidatorParser(resp)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed in api")
 	}
@@ -288,19 +278,12 @@ func GetBlockResults(c common.CommonClient, height int64) (
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	// create requester
-	requester := c.RPCClient.R().SetContext(ctx)
-
-	resp, err := requester.Get(types.CosmosBlockResultsQueryPath(height))
+	resp, err := c.RPCClient.Get(ctx, types.CosmosBlockResultsQueryPath(height))
 	if err != nil {
-		return nil, nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
-
+		return nil, nil, errors.Errorf("rpc call is failed from %s: %s", types.CosmosBlockResultsQueryPath(height), err)
 	}
 
-	txsEvents, blockEvents, err := parser.CosmosBlockResultsParser(resp.Body())
+	txsEvents, blockEvents, err := parser.CosmosBlockResultsParser(resp)
 	if err != nil {
 		return nil, nil, errors.WithStack(err)
 	}

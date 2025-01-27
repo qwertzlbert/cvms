@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/cosmostation/cvms/internal/common"
 	indexmodel "github.com/cosmostation/cvms/internal/common/indexer/model"
@@ -15,20 +14,16 @@ func GetFinalityProvidersInfo(c common.CommonClient, newFinalityProviderMap map[
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-
 	fpInfoList := make([]indexmodel.FinalityProviderInfo, 0)
 	maxCnt := 10
 	key := ""
 	for cnt := 0; cnt <= maxCnt; cnt++ {
-		resp, err := requester.Get(commontypes.BabylonFinalityProviderInfosQueryPath(key))
+		resp, err := c.APIClient.Get(ctx, commontypes.BabylonFinalityProviderInfosQueryPath(key))
 		if err != nil {
-			return nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
+			return nil, errors.Errorf("rpc call is failed from %s: %s", commontypes.BabylonFinalityProviderInfosQueryPath(key), err)
 		}
-		if resp.StatusCode() != http.StatusOK {
-			return nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
-		}
-		fpInfos, err := commonparser.ParseFinalityProviderInfos(resp.Body())
+
+		fpInfos, err := commonparser.ParseFinalityProviderInfos(resp)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}

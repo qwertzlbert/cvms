@@ -44,6 +44,10 @@ func (rc *RestyClient) GetEndpoint() (string, error) {
 	return rc.endpoint, nil
 }
 
+func (rc *RestyClient) SetHeaders(header map[string]string) {
+	rc.client.SetHeaders(header)
+}
+
 func NewRestyClient() *RestyClient {
 	rc := &RestyClient{}
 	rc.client = resty.New().

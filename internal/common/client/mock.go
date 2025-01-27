@@ -22,6 +22,10 @@ func (m *MockClient) SetEndpoint(endpoint string) Client {
 	return m
 }
 
+func (m *MockClient) SetHeaders(headers map[string]string) {
+	// do nothing
+}
+
 func (m *MockClient) GetEndpoint() (string, error) {
 	return m.endpoint, nil
 }
