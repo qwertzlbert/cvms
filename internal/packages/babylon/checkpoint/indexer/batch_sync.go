@@ -37,13 +37,13 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 	/* error */ error,
 ) {
 	newIndexerPointerEpoch := lastIndexPointerEpoch + 1
-	requester := idx.APIClient.R().SetContext(context.Background())
-	resp, err := requester.Get(CurrentEpochQueryPath)
+	ctx := context.Background()
+	resp, err := idx.APIClient.Get(ctx, CurrentEpochQueryPath)
 	if err != nil {
 		return lastIndexPointerEpoch, errors.Wrap(err, "failed to call current epoch api")
 	}
 
-	currentEpoch, _, err := ParseCurrentEpoch(resp.Body())
+	currentEpoch, _, err := ParseCurrentEpoch(resp)
 	if err != nil {
 		return lastIndexPointerEpoch, errors.Wrap(err, "failed to parse current epoch response")
 	}
@@ -82,12 +82,12 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		}
 
 		idx.Debugf("sync epoch: %d", epoch)
-		resp, err := requester.Get(EpochQueryPath(epoch + 1)) // NOTE: for finding the first block for this epoch, we should use epoch + 1
+		resp, err := idx.APIClient.Get(ctx, EpochQueryPath(epoch+1)) // NOTE: for finding the first block for this epoch, we should use epoch + 1
 		if err != nil {
 			return lastIndexPointerEpoch, errors.Wrap(err, "failed to get epoch data")
 		}
 
-		firstBlockHeightInEpoch, _, err := ParseEpoch(resp.Body())
+		firstBlockHeightInEpoch, _, err := ParseEpoch(resp)
 		if err != nil {
 			return lastIndexPointerEpoch, errors.Wrap(err, "failed to get epoch data")
 		}
@@ -163,13 +163,13 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		}
 
 		// get epoch data
-		resp, err = requester.Get(BlockTxsQueryPath(firstBlockHeightInEpoch))
+		resp, err = idx.APIClient.Get(ctx, BlockTxsQueryPath(firstBlockHeightInEpoch))
 		if err != nil {
 			idx.Errorln(err)
 			return lastIndexPointerEpoch, err
 		}
 
-		blockHeight, blockTimestamp, bexVotes, err := ExtractBabylonExtendVoteAndBlockInfo(resp.Body())
+		blockHeight, blockTimestamp, bexVotes, err := ExtractBabylonExtendVoteAndBlockInfo(resp)
 		if err != nil {
 			idx.Errorln(err)
 			return lastIndexPointerEpoch, err

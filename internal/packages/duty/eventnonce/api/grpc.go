@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -11,14 +10,7 @@ import (
 
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/helper"
-	grpchelper "github.com/cosmostation/cvms/internal/helper/grpc"
 	"github.com/cosmostation/cvms/internal/packages/duty/eventnonce/types"
-	"github.com/jhump/protoreflect/grpcreflect"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/reflect/protoreflect"
-
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 )
 
 // NOTE: debug
@@ -36,42 +28,7 @@ func GetEventNonceStatusByGRPC(
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	creds := insecure.NewCredentials()
-
-	// check the port is 443 or not
-	if strings.Contains(c.GetGRPCEndPoint(), ":443") {
-		tlsConf := &tls.Config{
-			NextProtos: []string{"h2"}, // only allow HTTP/2
-			MinVersion: tls.VersionTLS12,
-		}
-
-		creds = credentials.NewTLS(tlsConf)
-	}
-
-	// create grpc connection
-	grpcConnection, err := grpc.NewClient(c.GetGRPCEndPoint(),
-		grpc.WithTransportCredentials(creds),
-	)
-	if err != nil {
-		c.Errorf("grpc request error: %s", err.Error())
-		return types.CommonEventNonceStatus{}, common.ErrFailedCreateGrpcConnection
-	}
-	defer grpcConnection.Close()
-
-	var headerMD metadata.MD
-	reflectionClient := grpcreflect.NewClientAuto(
-		metadata.NewOutgoingContext(ctx, headerMD),
-		grpcConnection,
-	)
-	// get on-chain validators
-	resp, err := grpchelper.GrpcDynamicQuery(
-		ctx,                                  // common context
-		reflectionClient,                     // grpc reflection client
-		grpcConnection,                       // grpc query stub
-		types.CommonValidatorGrpcQueryPath,   // grpc query method
-		types.CommonValidatorGrpcQueryOption, // grpc query payload
-	)
-
+	resp, err := c.GRPCClient.Post(ctx, types.CommonValidatorGrpcQueryPath, []byte(types.CommonValidatorGrpcQueryOption))
 	if err != nil {
 		c.Errorf("grpc request err: %s", err.Error())
 		return types.CommonEventNonceStatus{}, common.ErrFailedGrpcRequest
@@ -79,7 +36,7 @@ func GetEventNonceStatusByGRPC(
 
 	// json unmarsharling received validators data
 	var validators types.CommonValidatorsQueryResponse
-	if err := json.Unmarshal([]byte(resp), &validators); err != nil {
+	if err := json.Unmarshal(resp, &validators); err != nil {
 		c.Errorf("parser error: %s", err)
 		return types.CommonEventNonceStatus{}, common.ErrFailedJsonUnmarshal
 	}
@@ -87,25 +44,25 @@ func GetEventNonceStatusByGRPC(
 	// init channel and waitgroup
 	ch := make(chan helper.Result)
 	var wg sync.WaitGroup
-	var methodDescriptor protoreflect.MethodDescriptor
+	// var methodDescriptor protoreflect.MethodDescriptor
 	validatorResults := make([]types.ValidatorStatus, 0)
 
 	// add wg by the number of total validators
 	wg.Add(len(validators.Validators))
 
 	// get validators orchestrator address
-	for idx, item := range validators.Validators {
+	for _, item := range validators.Validators {
 		// in only first time, make a method descriptor by using grpc reflection client
-		if idx == 0 {
-			methodDescriptor, err = grpchelper.GrpcMakeDescriptor(
-				reflectionClient,       // grpc reflection client
-				commonOrchestratorPath, // grpc reflection method path
-			)
-			if err != nil {
-				c.Errorln("grpc api err: failed to make method descprtior")
-				return types.CommonEventNonceStatus{}, common.ErrFailedGrpcRequest
-			}
-		}
+		// if idx == 0 {
+		// 	methodDescriptor, err = grpchelper.GrpcMakeDescriptor(
+		// 		reflectionClient,       // grpc reflection client
+		// 		commonOrchestratorPath, // grpc reflection method path
+		// 	)
+		// 	if err != nil {
+		// 		c.Errorln("grpc api err: failed to make method descprtior")
+		// 		return types.CommonEventNonceStatus{}, common.ErrFailedGrpcRequest
+		// 	}
+		// }
 
 		validatorOperatorAddress := item.OperatorAddress
 		validatorMoniker := item.Description.Moniker
@@ -114,13 +71,7 @@ func GetEventNonceStatusByGRPC(
 		go func(ch chan helper.Result) {
 			defer wg.Done()
 
-			resp, err := grpchelper.GrpcInvokeQuery(
-				ctx,                       // common context
-				methodDescriptor,          // grpc query method descriptor
-				grpcConnection,            // grpc query connection
-				commonOrchestratorPayload, // grpc query payload
-			)
-
+			resp, err := c.GRPCClient.Post(ctx, commonOrchestratorPath, []byte(commonOrchestratorPayload))
 			if err != nil {
 				// NOTE: we need to modify this logic in the future for general cases
 
@@ -140,7 +91,7 @@ func GetEventNonceStatusByGRPC(
 				return
 			}
 
-			orchestratorAddress, err := commonOrchestratorParser([]byte(resp))
+			orchestratorAddress, err := commonOrchestratorParser(resp)
 			if err != nil {
 				c.Errorf("grpc error: %v", err)
 				ch <- helper.Result{Success: false, Item: nil}
@@ -201,17 +152,17 @@ func GetEventNonceStatusByGRPC(
 	wg.Add(len(validatorResults))
 
 	// get eventnonce by each orchestrator
-	for idx, item := range validatorResults {
-		if idx == 0 {
-			methodDescriptor, err = grpchelper.GrpcMakeDescriptor(
-				reflectionClient,          // grpc reflection client
-				commonEventNonceQueryPath, // grpc reflection method path
-			)
-			if err != nil {
-				c.Errorln("grpc api err: failed to make method descprtior")
-				return types.CommonEventNonceStatus{}, common.ErrFailedGrpcRequest
-			}
-		}
+	for _, item := range validatorResults {
+		// if idx == 0 {
+		// 	methodDescriptor, err = grpchelper.GrpcMakeDescriptor(
+		// 		reflectionClient,          // grpc reflection client
+		// 		commonEventNonceQueryPath, // grpc reflection method path
+		// 	)
+		// 	if err != nil {
+		// 		c.Errorln("grpc api err: failed to make method descprtior")
+		// 		return types.CommonEventNonceStatus{}, common.ErrFailedGrpcRequest
+		// 	}
+		// }
 
 		orchestratorAddress := item.OrchestratorAddress
 		validatorOperatorAddress := item.ValidatorOperatorAddress
@@ -233,12 +184,7 @@ func GetEventNonceStatusByGRPC(
 				return
 			}
 
-			resp, err := grpchelper.GrpcInvokeQuery(
-				ctx,              // common context
-				methodDescriptor, // grpc query method descriptor
-				grpcConnection,   // grpc query connection
-				payload,          // grpc query payload
-			)
+			resp, err := c.GRPCClient.Post(ctx, commonEventNonceQueryPath, []byte(payload))
 			if err != nil {
 				c.Errorf("grpc error: %s", err)
 				ch <- helper.Result{Success: false, Item: nil}
