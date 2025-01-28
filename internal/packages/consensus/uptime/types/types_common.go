@@ -7,9 +7,12 @@ var (
 
 // common
 type CommonUptimeStatus struct {
-	MinSignedPerWindow float64                 `json:"slash_winodw"`
-	SignedBlocksWindow float64                 `json:"vote_period"`
-	Validators         []ValidatorUptimeStatus `json:"validators"`
+	MinSignedPerWindow      float64                 `json:"slash_winodw"`
+	SignedBlocksWindow      float64                 `json:"vote_period"`
+	DowntimeJailDuration    float64                 `json:"downtime_jail_duration"`
+	SlashFractionDowntime   float64                 `json:"slash_fraction_downtime"`
+	SlashFractionDoubleSign float64                 `json:"slash_fraction_double_sign"`
+	Validators              []ValidatorUptimeStatus `json:"validators"`
 }
 
 // cosmos uptime status

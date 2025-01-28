@@ -245,11 +245,20 @@ func getConsumerValidatorUptimeStatus(
 func getUptimeParams(c common.CommonClient, chainName string) (
 	/* signed blocks window */ float64,
 	/* minimum signed per window */ float64,
+	/* downtime jail duration */ time.Duration,
+	/* slash fraction for downtime */ float64,
+	/* slash fraction for double sign */ float64,
 	/* unexpected error */ error,
 ) {
 	var (
 		queryPath string
-		parser    func(resp []byte) (signedBlocksWindow float64, minSignedPerWindow float64, err error)
+		parser    func(resp []byte) (
+			signedBlocksWindow float64,
+			minSignedPerWindow float64,
+			downtimeJailDuration time.Duration,
+			slashFractionDowntime float64,
+			slashFractionDoubleSign float64,
+			err error)
 	)
 
 	switch chainName {
@@ -267,17 +276,20 @@ func getUptimeParams(c common.CommonClient, chainName string) (
 	requester := c.APIClient
 	resp, err := requester.Get(ctx, queryPath)
 	if err != nil {
-		return 0, 0, errors.Cause(err)
+		return 0, 0, 0, 0, 0, errors.Cause(err)
 	}
 
-	signedBlocksWindow, minSignedPerWindow, err := parser(resp)
+	signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, err := parser(resp)
 	if err != nil {
-		return 0, 0, errors.Cause(err)
+		return 0, 0, 0, 0, 0, errors.Cause(err)
 	}
 
 	c.Debugf("signed block window: %.f", signedBlocksWindow)
 	c.Debugf("min signed per window: %.2f", minSignedPerWindow)
-	return signedBlocksWindow, minSignedPerWindow, nil
+	c.Debugf("downtime jail duration: %s", downtimeJailDuration)
+	c.Debugf("slash fraction downtime: %.2f", slashFractionDowntime)
+	c.Debugf("slash fraction double sign: %.2f", slashFractionDoubleSign)
+	return signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, nil
 }
 
 func sliceStakingValidatorByVP(stakingValidators []commontypes.CosmosStakingValidator, totalConsensusValidators int) []commontypes.CosmosStakingValidator {

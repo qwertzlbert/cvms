@@ -18,13 +18,16 @@ var (
 )
 
 const (
-	Subsystem                    = "uptime"
-	SubsystemSleep               = 10 * time.Second
-	UnHealthSleep                = 10 * time.Second
-	MissBlockCounterMetricName   = "missed_blocks_counter"
-	JailedMetricName             = "jailed"
-	SignedBlocksWindowMetricName = "signed_blocks_window"
-	MinSignedPerWindowMetricName = "min_signed_per_window"
+	Subsystem                         = "uptime"
+	SubsystemSleep                    = 10 * time.Second
+	UnHealthSleep                     = 10 * time.Second
+	MissBlockCounterMetricName        = "missed_blocks_counter"
+	JailedMetricName                  = "jailed"
+	SignedBlocksWindowMetricName      = "signed_blocks_window"
+	MinSignedPerWindowMetricName      = "min_signed_per_window"
+	DowntimeJailDurationMetricName    = "downtime_jail_duration"
+	SlashFractionDowntimeMetricName   = "slash_fraction_downtime"
+	SlashFractionDoubleSignMetricName = "slash_fraction_double_sign"
 )
 
 func Start(p common.Packager) error {
@@ -96,6 +99,27 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		Namespace:   common.Namespace,
 		Subsystem:   Subsystem,
 		Name:        MinSignedPerWindowMetricName,
+		ConstLabels: packageLabels,
+	})
+	downtimeJailDurationMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        DowntimeJailDurationMetricName,
+		Help:        "The duration a node will be jailed for downtime (in seconds)",
+		ConstLabels: packageLabels,
+	})
+	slashFractionDowntimeMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        SlashFractionDowntimeMetricName,
+		Help:        "The fraction of validator's stake slashed for downtime",
+		ConstLabels: packageLabels,
+	})
+	slashFractionDoubleSignMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        SlashFractionDoubleSignMetricName,
+		Help:        "The fraction of validator's stake slashed for double signing",
 		ConstLabels: packageLabels,
 	})
 
@@ -184,6 +208,9 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		// update metrics by each chain
 		signedBlocksWindowMetric.Set(status.SignedBlocksWindow)
 		minSignedPerWindowMetric.Set(status.MinSignedPerWindow)
+		downtimeJailDurationMetric.Set(status.DowntimeJailDuration)
+		slashFractionDowntimeMetric.Set(status.SlashFractionDowntime)
+		slashFractionDoubleSignMetric.Set(status.SlashFractionDoubleSign)
 
 		exporter.Infof("updated metrics successfully and going to sleep %s ...", SubsystemSleep.String())
 

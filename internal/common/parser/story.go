@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/types"
@@ -86,18 +87,35 @@ func StorySlashingParser(resp []byte) (consensusAddress string, indexOffset floa
 	return result.Msg.ValidatorSigningInfo.ConsensusAddress, indexOffset, isTomstoned, missedBlocksCounter, nil
 }
 
-func StorySlashingParamsParser(resp []byte) (signedBlocksWindow float64, minSignedPerWindow float64, err error) {
+func StorySlashingParamsParser(resp []byte) (signedBlocksWindow float64,
+	minSignedPerWindow float64,
+	downtimeJailDuration time.Duration,
+	slashFractionDowntime float64,
+	slashFractionDoubleSign float64,
+	err error) {
 	var result types.StorySlashingParamsResponse
 	if err := json.Unmarshal(resp, &result); err != nil {
-		return 0, 0, err
+		return 0, 0, 0, 0, 0, err
 	}
 	signedBlocksWindow, err = strconv.ParseFloat(result.Msg.Params.SignedBlocksWindow, 64)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, 0, 0, err
 	}
 	minSignedPerWindow, err = strconv.ParseFloat(result.Msg.Params.MinSignedPerWindow, 64)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, 0, 0, err
 	}
-	return signedBlocksWindow, minSignedPerWindow, nil
+	downtimeJailDuration, err = time.ParseDuration(result.Msg.Params.DowntimeJailDuration)
+	if err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+	slashFractionDowntime, err = strconv.ParseFloat(result.Msg.Params.SlashFractionDowntime, 64)
+	if err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+	slashFractionDoubleSign, err = strconv.ParseFloat(result.Msg.Params.SlashFractionDoubleSign, 64)
+	if err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+	return signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, nil
 }

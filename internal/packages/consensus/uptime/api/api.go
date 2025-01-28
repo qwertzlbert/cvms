@@ -30,15 +30,19 @@ func GetUptimeStatus(exporter *common.Exporter) (types.CommonUptimeStatus, error
 	exporter.Debugf("got total validator uptime: %d", len(validatorUptimeStatus))
 
 	// 4. get on-chain uptime parameter
-	signedBlocksWindow, minSignedPerWindow, err := getUptimeParams(exporter.CommonClient, exporter.ChainName)
+	// As those variables are not changing frequently, it should probably not be called as often?
+	signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, err := getUptimeParams(exporter.CommonClient, exporter.ChainName)
 	if err != nil {
 		return types.CommonUptimeStatus{}, errors.Cause(err)
 	}
 
 	return types.CommonUptimeStatus{
-		SignedBlocksWindow: signedBlocksWindow,
-		MinSignedPerWindow: minSignedPerWindow,
-		Validators:         validatorUptimeStatus,
+		SignedBlocksWindow:      signedBlocksWindow,
+		MinSignedPerWindow:      minSignedPerWindow,
+		DowntimeJailDuration:    downtimeJailDuration.Seconds(),
+		SlashFractionDowntime:   slashFractionDowntime,
+		SlashFractionDoubleSign: slashFractionDoubleSign,
+		Validators:              validatorUptimeStatus,
 	}, nil
 }
 
@@ -87,14 +91,17 @@ func GetConsumserUptimeStatus(exporter *common.Exporter, chainID string) (types.
 	exporter.Debugf("got total consumer validator uptime: %d", len(validatorUptimeStatus))
 
 	// 5. get on-chain slashing parameter
-	signedBlocksWindow, minSignedPerWindow, err := getUptimeParams(consumerClient, exporter.ChainName)
+	signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, err := getUptimeParams(consumerClient, exporter.ChainName)
 	if err != nil {
 		return types.CommonUptimeStatus{}, errors.Cause(err)
 	}
 
 	return types.CommonUptimeStatus{
-		SignedBlocksWindow: signedBlocksWindow,
-		MinSignedPerWindow: minSignedPerWindow,
-		Validators:         validatorUptimeStatus,
+		SignedBlocksWindow:      signedBlocksWindow,
+		MinSignedPerWindow:      minSignedPerWindow,
+		DowntimeJailDuration:    downtimeJailDuration.Seconds(),
+		SlashFractionDowntime:   slashFractionDowntime,
+		SlashFractionDoubleSign: slashFractionDoubleSign,
+		Validators:              validatorUptimeStatus,
 	}, nil
 }
