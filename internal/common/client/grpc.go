@@ -58,7 +58,6 @@ func (gc *GrpcClient) SetEndpoint(endpoint string) Client {
 	}
 	ctx, ctxCancel := context.WithTimeout(context.Background(), gc.timeout)
 	conn, err := dialer.DialContext(ctx, "tcp", endpoint)
-	// conn, err := Dialer.DialContext("tcp", endpoint, tlsConf)
 	if err != nil {
 		var recordHeaderError tls.RecordHeaderError
 		if errors.As(err, &recordHeaderError) {
