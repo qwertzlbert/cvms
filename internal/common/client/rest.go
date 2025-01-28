@@ -64,7 +64,7 @@ func (rc *RestyClient) Get(context context.Context, uri string) ([]byte, error) 
 		SetContext(context).
 		Get(rc.endpoint + uri)
 	if err != nil {
-		rc.logger.Debugf("GET request failed: %s", err.Error())
+		rc.logger.Errorf("GET request failed: %s", err.Error())
 		return nil, err
 	}
 	rc.logger.Debugf("Received %d status code from %s", resp.StatusCode(), resp.Request.URL)
@@ -82,7 +82,7 @@ func (rc *RestyClient) Post(context context.Context, uri string, body ...[]byte)
 		SetBody(body).
 		Post(rc.endpoint + uri)
 	if err != nil {
-		rc.logger.Debugf("POST request failed: %s", err.Error())
+		rc.logger.Errorf("POST request failed: %s", err.Error())
 		return nil, err
 	}
 	rc.logger.Debugf("Received %d status code from %s", resp.StatusCode(), resp.Request.URL)
