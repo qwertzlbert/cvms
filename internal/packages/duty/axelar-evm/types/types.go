@@ -14,7 +14,7 @@ const (
 	CommonValidatorQueryPath = "/cosmos/staking/v1beta1/validators?status=BOND_STATUS_BONDED&pagination.count_total=true&pagination.limit=500"
 
 	// axelar
-	AxelarEvmChainsQueryPath        = "axelar/evm/v1beta1/chains?status=1"
+	AxelarEvmChainsQueryPath        = "/axelar/evm/v1beta1/chains?status=1"
 	AxelarChainMaintainersQueryPath = "/axelar/nexus/v1beta1/chain_maintainers/{chain}"
 	AxelarProxyResisterQueryPath    = `/abci_query?path="/custom/snapshot/proxy/{validator_operator_address}"`
 )
