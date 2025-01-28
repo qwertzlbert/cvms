@@ -51,7 +51,7 @@ func (gc *GrpcClient) SetEndpoint(endpoint string) Client {
 	gCreds := credentials.NewTLS(tlsConf)
 
 	// Simple handshake check to determine if the server supports TLS
-	_, err := tls.Dial("tcp", endpoint, tlsConf)
+	conn, err := tls.Dial("tcp", endpoint, tlsConf)
 	if err != nil {
 		var recordHeaderError tls.RecordHeaderError
 		if errors.As(err, &recordHeaderError) {
@@ -60,8 +60,10 @@ func (gc *GrpcClient) SetEndpoint(endpoint string) Client {
 
 		} else {
 			gc.logger.Errorf("error setting up gRPC connection: %s", err.Error())
+			return nil
 		}
 	} else {
+		conn.Close()
 		dialOptions = append(dialOptions, grpc.WithTransportCredentials(gCreds))
 	}
 
@@ -113,6 +115,10 @@ func (gc *GrpcClient) Post(ctx context.Context, uri string, body ...[]byte) ([]b
 	if gc.client.GetState() != connectivity.Ready {
 		gc.logger.Info("grpc client is not ready yet. Waking up...")
 		gc.client.Connect()
+		if !gc.client.WaitForStateChange(ctx, connectivity.Ready) {
+			gc.logger.Error("grpc client still not ready after waiting for connection")
+			return nil, errors.New("grpc connection not ready")
+		}
 	}
 
 	refCtx := metadata.NewOutgoingContext(ctx, make(metadata.MD))
