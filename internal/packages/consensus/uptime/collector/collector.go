@@ -18,15 +18,14 @@ var (
 )
 
 const (
-	Subsystem                    = "uptime"
-	SubsystemSleep               = 10 * time.Second
-	UnHealthSleep                = 10 * time.Second
-	MissBlockCounterMetricName   = "missed_blocks_counter"
-	JailedMetricName             = "jailed"
-	StakedTokensMetricName       = "staked_tokens_total"
-	SignedBlocksWindowMetricName = "signed_blocks_window"
-	MinSignedPerWindowMetricName = "min_signed_per_window"
-
+	Subsystem                         = "uptime"
+	SubsystemSleep                    = 10 * time.Second
+	UnHealthSleep                     = 10 * time.Second
+	MissBlockCounterMetricName        = "missed_blocks_counter"
+	JailedMetricName                  = "jailed"
+	StakedTokensMetricName            = "staked_tokens_total"
+	SignedBlocksWindowMetricName      = "signed_blocks_window"
+	MinSignedPerWindowMetricName      = "min_signed_per_window"
 	METRIC_NAME_VP                    = "validator_voting_power"
 	DowntimeJailDurationMetricName    = "downtime_jail_duration"
 	SlashFractionDowntimeMetricName   = "slash_fraction_downtime"
@@ -275,7 +274,7 @@ func loop(exporter *common.Exporter, p common.Packager) {
 						common.ProposerAddressLabel:  item.ProposerAddress,
 						common.MonikerLabel:          item.Moniker,
 					}).
-					Set(item.StakedTokens)
+					Set(float64(item.StakedTokens))
 
 				validatorCommissionMetric.
 					With(prometheus.Labels{
@@ -331,7 +330,7 @@ func loop(exporter *common.Exporter, p common.Packager) {
 							common.ProposerAddressLabel:  item.ProposerAddress,
 							common.MonikerLabel:          item.Moniker,
 						}).
-						Set(item.StakedTokens)
+						Set(float64(item.StakedTokens))
 					validatorCommissionMetric.
 						With(prometheus.Labels{
 							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,

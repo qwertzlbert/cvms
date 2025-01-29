@@ -113,6 +113,18 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 			commissionRate = 0
 		}
 
+		stakedTokens, err := strconv.ParseInt(item.Tokens, 10, 64)
+		if err != nil {
+			c.Warnf("Staked tokens parsing error, assuming 0: %s", err)
+			stakedTokens = 0
+		}
+
+		commissionRate, err := strconv.ParseFloat(item.Commission.CommissionRates.Rate, 64)
+		if err != nil {
+			c.Warnf("Commission rate parsing error, assuming 0: %s", err)
+			commissionRate = 0
+		}
+
 		go func(ch chan helper.Result) {
 			defer helper.HandleOutOfNilResponse(c.Entry)
 			defer wg.Done()
@@ -145,7 +157,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 					IsTomstoned:               isTomstoned,
 					ValidatorOperatorAddress:  validatorOperatorAddress,
 					VotingPower:               vp,
-					StakedTokens:              stakedTokens,
+					StakedTokens:              int(stakedTokens),
 					CommissionRate:            commissionRate,
 					ValidatorRank:             validatorRank,
 				}}
