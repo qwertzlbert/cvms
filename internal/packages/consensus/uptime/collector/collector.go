@@ -28,6 +28,7 @@ const (
 	DowntimeJailDurationMetricName    = "downtime_jail_duration"
 	SlashFractionDowntimeMetricName   = "slash_fraction_downtime"
 	SlashFractionDoubleSignMetricName = "slash_fraction_double_sign"
+	bondedValidatorsTotalMetricName   = "bonded_validators_total"
 )
 
 func Start(p common.Packager) error {
@@ -122,6 +123,13 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		Help:        "The fraction of validator's stake slashed for double signing",
 		ConstLabels: packageLabels,
 	})
+	bondedValidatorsTotalMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        bondedValidatorsTotalMetricName,
+		Help:        "The total number of bonded validators",
+		ConstLabels: packageLabels,
+	})
 
 	isUnhealth := false
 	for {
@@ -211,6 +219,7 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		downtimeJailDurationMetric.Set(status.DowntimeJailDuration)
 		slashFractionDowntimeMetric.Set(status.SlashFractionDowntime)
 		slashFractionDoubleSignMetric.Set(status.SlashFractionDoubleSign)
+		bondedValidatorsTotalMetric.Set(float64(status.BondedValidatorsTotal))
 
 		exporter.Infof("updated metrics successfully and going to sleep %s ...", SubsystemSleep.String())
 

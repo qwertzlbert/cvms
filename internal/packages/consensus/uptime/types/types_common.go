@@ -12,6 +12,7 @@ type CommonUptimeStatus struct {
 	DowntimeJailDuration    float64                 `json:"downtime_jail_duration"`
 	SlashFractionDowntime   float64                 `json:"slash_fraction_downtime"`
 	SlashFractionDoubleSign float64                 `json:"slash_fraction_double_sign"`
+	BondedValidatorsTotal   int                     `json:"bonded_validators_total"`
 	Validators              []ValidatorUptimeStatus `json:"validators"`
 }
 

@@ -42,6 +42,7 @@ func GetUptimeStatus(exporter *common.Exporter) (types.CommonUptimeStatus, error
 		DowntimeJailDuration:    downtimeJailDuration.Seconds(),
 		SlashFractionDowntime:   slashFractionDowntime,
 		SlashFractionDoubleSign: slashFractionDoubleSign,
+		BondedValidatorsTotal:   len(stakingValidators),
 		Validators:              validatorUptimeStatus,
 	}, nil
 }
