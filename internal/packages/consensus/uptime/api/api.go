@@ -1,6 +1,8 @@
 package api
 
 import (
+	"strconv"
+
 	"github.com/cosmostation/cvms/internal/common"
 	commonapi "github.com/cosmostation/cvms/internal/common/api"
 	"github.com/cosmostation/cvms/internal/packages/consensus/uptime/types"
@@ -36,6 +38,15 @@ func GetUptimeStatus(exporter *common.Exporter) (types.CommonUptimeStatus, error
 		return types.CommonUptimeStatus{}, errors.Cause(err)
 	}
 
+	// Sort staking validators by stake amount to get minimum stake required for an active seat
+	ordersVals := sliceStakingValidatorByVP(stakingValidators, len(stakingValidators))
+
+	minSeatPrice, err := strconv.ParseInt(ordersVals[len(ordersVals)-1].Tokens, 10, 64)
+	if err != nil {
+		exporter.Warnf("Min seat price parsing error, assuming 0: %s", err)
+		minSeatPrice = 0
+	}
+
 	return types.CommonUptimeStatus{
 		SignedBlocksWindow:      signedBlocksWindow,
 		MinSignedPerWindow:      minSignedPerWindow,
@@ -43,7 +54,9 @@ func GetUptimeStatus(exporter *common.Exporter) (types.CommonUptimeStatus, error
 		SlashFractionDowntime:   slashFractionDowntime,
 		SlashFractionDoubleSign: slashFractionDoubleSign,
 		BondedValidatorsTotal:   len(stakingValidators),
+		ActiveValidatorsTotal:   len(validators),
 		Validators:              validatorUptimeStatus,
+		MinimumSeatPrice:        minSeatPrice,
 	}, nil
 }
 

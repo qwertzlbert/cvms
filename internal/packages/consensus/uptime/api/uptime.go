@@ -113,6 +113,12 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 				return
 			}
 
+			stakedTokens, err := strconv.ParseInt(item.Tokens, 10, 64)
+			if err != nil {
+				c.Warnf("Staked tokens parsing error, assuming 0: %s", err)
+				stakedTokens = 0
+			}
+
 			ch <- helper.Result{
 				Success: true,
 				Item: types.ValidatorUptimeStatus{
@@ -122,6 +128,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 					MissedBlockCounter:        missedBlocksCounter,
 					IsTomstoned:               isTomstoned,
 					ValidatorOperatorAddress:  validatorOperatorAddress,
+					StakedTokens:              int(stakedTokens),
 				}}
 		}(ch)
 		time.Sleep(10 * time.Millisecond)

@@ -114,8 +114,6 @@ func TestGetUptimeParamsHappy(t *testing.T) {
 		}
 	}`)
 
-	// badResult := make(map[string][]byte)
-	// badResult["/cosmos/slashing/v1beta1/params"] = []byte(`ERROR: UNEXPECTED RESPONSE`)
 	l := logger.GetTestLogger()
 
 	commonClient := common.CommonClient{

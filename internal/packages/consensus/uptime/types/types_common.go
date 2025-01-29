@@ -13,6 +13,8 @@ type CommonUptimeStatus struct {
 	SlashFractionDowntime   float64                 `json:"slash_fraction_downtime"`
 	SlashFractionDoubleSign float64                 `json:"slash_fraction_double_sign"`
 	BondedValidatorsTotal   int                     `json:"bonded_validators_total"`
+	ActiveValidatorsTotal   int                     `json:"active_validators_total"`
+	MinimumSeatPrice        int64                   `json:"minimum_seat_price"`
 	Validators              []ValidatorUptimeStatus `json:"validators"`
 }
 
@@ -24,6 +26,7 @@ type ValidatorUptimeStatus struct {
 	ValidatorConsensusAddress string  `json:"validator_consensus_addreess"`
 	MissedBlockCounter        float64 `json:"missed_block_counter"`
 	IsTomstoned               float64
+	StakedTokens              int
 	// Only Consumer Chain
 	ConsumerConsensusAddress string `json:"consumer_consensus_address"`
 }

@@ -23,12 +23,15 @@ const (
 	UnHealthSleep                     = 10 * time.Second
 	MissBlockCounterMetricName        = "missed_blocks_counter"
 	JailedMetricName                  = "jailed"
+	StakedTokensMetricName            = "staked_tokens_total"
 	SignedBlocksWindowMetricName      = "signed_blocks_window"
 	MinSignedPerWindowMetricName      = "min_signed_per_window"
 	DowntimeJailDurationMetricName    = "downtime_jail_duration"
 	SlashFractionDowntimeMetricName   = "slash_fraction_downtime"
 	SlashFractionDoubleSignMetricName = "slash_fraction_double_sign"
 	bondedValidatorsTotalMetricName   = "bonded_validators_total"
+	activeValidatorsTotalMetricName   = "active_validators_total"
+	minSeatPriceMetric                = "min_seat_price"
 )
 
 func Start(p common.Packager) error {
@@ -89,6 +92,19 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		common.ProposerAddressLabel,
 	})
 
+	stakedTokensMetric := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        StakedTokensMetricName,
+		Help:        "The total staked tokens of a validator",
+		ConstLabels: packageLabels,
+	}, []string{
+		common.MonikerLabel,
+		common.ValidatorAddressLabel,
+		common.ConsensusAddressLabel,
+		common.ProposerAddressLabel,
+	})
+
 	// metrics for each chain
 	signedBlocksWindowMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
 		Namespace:   common.Namespace,
@@ -128,6 +144,21 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		Subsystem:   Subsystem,
 		Name:        bondedValidatorsTotalMetricName,
 		Help:        "The total number of bonded validators",
+		ConstLabels: packageLabels,
+	})
+	activeValidatorsTotalMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        activeValidatorsTotalMetricName,
+		Help:        "The total number of active validators",
+		ConstLabels: packageLabels,
+	})
+
+	minSeatPriceMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        minSeatPriceMetric,
+		Help:        "The minimum amount of stake required to get a seat as an active validator",
 		ConstLabels: packageLabels,
 	})
 
@@ -188,6 +219,16 @@ func loop(exporter *common.Exporter, p common.Packager) {
 						common.MonikerLabel:          item.Moniker,
 					}).
 					Set(float64(item.IsTomstoned))
+
+				stakedTokensMetric.
+					With(prometheus.Labels{
+						common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
+						common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
+						common.ProposerAddressLabel:  item.ProposerAddress,
+						common.MonikerLabel:          item.Moniker,
+					}).
+					Set(float64(item.StakedTokens))
+
 			}
 		} else {
 			// update metrics by each validators
@@ -209,6 +250,15 @@ func loop(exporter *common.Exporter, p common.Packager) {
 							common.MonikerLabel:          item.Moniker,
 						}).
 						Set(float64(item.IsTomstoned))
+					stakedTokensMetric.
+						With(prometheus.Labels{
+							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
+							common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
+							common.ProposerAddressLabel:  item.ProposerAddress,
+							common.MonikerLabel:          item.Moniker,
+						}).
+						Set(float64(item.StakedTokens))
+
 				}
 			}
 		}
@@ -220,6 +270,8 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		slashFractionDowntimeMetric.Set(status.SlashFractionDowntime)
 		slashFractionDoubleSignMetric.Set(status.SlashFractionDoubleSign)
 		bondedValidatorsTotalMetric.Set(float64(status.BondedValidatorsTotal))
+		activeValidatorsTotalMetric.Set(float64(len(status.Validators)))
+		minSeatPriceMetric.Set(float64(status.MinimumSeatPrice))
 
 		exporter.Infof("updated metrics successfully and going to sleep %s ...", SubsystemSleep.String())
 
