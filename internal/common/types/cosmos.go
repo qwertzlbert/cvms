@@ -177,6 +177,11 @@ type CosmosStakingValidator struct {
 	Description     struct {
 		Moniker string `json:"moniker"`
 	} `json:"description"`
+	Commission struct {
+		CommissionRates struct {
+			Rate string `json:"rate"`
+		} `json:"commission_rates"`
+	} `json:"commission"`
 	Tokens string `json:"tokens"`
 }
 
