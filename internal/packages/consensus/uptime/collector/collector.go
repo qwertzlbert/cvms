@@ -274,7 +274,7 @@ func loop(exporter *common.Exporter, p common.Packager) {
 						common.ProposerAddressLabel:  item.ProposerAddress,
 						common.MonikerLabel:          item.Moniker,
 					}).
-					Set(float64(item.StakedTokens))
+					Set(item.StakedTokens)
 
 				validatorCommissionMetric.
 					With(prometheus.Labels{
@@ -330,7 +330,7 @@ func loop(exporter *common.Exporter, p common.Packager) {
 							common.ProposerAddressLabel:  item.ProposerAddress,
 							common.MonikerLabel:          item.Moniker,
 						}).
-						Set(float64(item.StakedTokens))
+						Set(item.StakedTokens)
 					validatorCommissionMetric.
 						With(prometheus.Labels{
 							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,

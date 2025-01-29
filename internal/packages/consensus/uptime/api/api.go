@@ -41,7 +41,7 @@ func GetUptimeStatus(exporter *common.Exporter) (types.CommonUptimeStatus, error
 	// Sort staking validators by stake amount to get minimum stake required for an active seat
 	ordersVals := sliceStakingValidatorByVP(stakingValidators, len(stakingValidators))
 
-	minSeatPrice, err := strconv.ParseInt(ordersVals[len(ordersVals)-1].Tokens, 10, 64)
+	minSeatPrice, err := strconv.ParseFloat(ordersVals[len(ordersVals)-1].Tokens, 64)
 	if err != nil {
 		exporter.Warnf("Min seat price parsing error, assuming 0: %s", err)
 		minSeatPrice = 0

@@ -113,9 +113,9 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 			commissionRate = 0
 		}
 
-		stakedTokens, err := strconv.ParseInt(item.Tokens, 10, 64)
+		stakedTokens, err := strconv.ParseFloat(item.Tokens, 64)
 		if err != nil {
-			c.Warnf("Staked tokens parsing error, assuming 0: %s", err)
+			c.Warnf("staked tokens parsing error, assuming 0: %s ", err)
 			stakedTokens = 0
 		}
 
