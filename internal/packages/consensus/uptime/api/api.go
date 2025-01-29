@@ -1,6 +1,8 @@
 package api
 
 import (
+	"strconv"
+
 	"github.com/cosmostation/cvms/internal/common"
 	commonapi "github.com/cosmostation/cvms/internal/common/api"
 	"github.com/cosmostation/cvms/internal/packages/consensus/uptime/types"
@@ -30,15 +32,31 @@ func GetUptimeStatus(exporter *common.Exporter) (types.CommonUptimeStatus, error
 	exporter.Debugf("got total validator uptime: %d", len(validatorUptimeStatus))
 
 	// 4. get on-chain uptime parameter
-	signedBlocksWindow, minSignedPerWindow, err := getUptimeParams(exporter.CommonClient, exporter.ChainName)
+	// As those variables are not changing frequently, it should probably not be called as often?
+	signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, err := getUptimeParams(exporter.CommonClient, exporter.ChainName)
 	if err != nil {
 		return types.CommonUptimeStatus{}, errors.Cause(err)
 	}
 
+	// Sort staking validators by stake amount to get minimum stake required for an active seat
+	ordersVals := sliceStakingValidatorByVP(stakingValidators, len(stakingValidators))
+
+	minSeatPrice, err := strconv.ParseInt(ordersVals[len(ordersVals)-1].Tokens, 10, 64)
+	if err != nil {
+		exporter.Warnf("Min seat price parsing error, assuming 0: %s", err)
+		minSeatPrice = 0
+	}
+
 	return types.CommonUptimeStatus{
-		SignedBlocksWindow: signedBlocksWindow,
-		MinSignedPerWindow: minSignedPerWindow,
-		Validators:         validatorUptimeStatus,
+		SignedBlocksWindow:      signedBlocksWindow,
+		MinSignedPerWindow:      minSignedPerWindow,
+		DowntimeJailDuration:    downtimeJailDuration.Seconds(),
+		SlashFractionDowntime:   slashFractionDowntime,
+		SlashFractionDoubleSign: slashFractionDoubleSign,
+		BondedValidatorsTotal:   len(stakingValidators),
+		ActiveValidatorsTotal:   len(validators),
+		Validators:              validatorUptimeStatus,
+		MinimumSeatPrice:        minSeatPrice,
 	}, nil
 }
 
@@ -87,14 +105,17 @@ func GetConsumserUptimeStatus(exporter *common.Exporter, chainID string) (types.
 	exporter.Debugf("got total consumer validator uptime: %d", len(validatorUptimeStatus))
 
 	// 5. get on-chain slashing parameter
-	signedBlocksWindow, minSignedPerWindow, err := getUptimeParams(consumerClient, exporter.ChainName)
+	signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, err := getUptimeParams(consumerClient, exporter.ChainName)
 	if err != nil {
 		return types.CommonUptimeStatus{}, errors.Cause(err)
 	}
 
 	return types.CommonUptimeStatus{
-		SignedBlocksWindow: signedBlocksWindow,
-		MinSignedPerWindow: minSignedPerWindow,
-		Validators:         validatorUptimeStatus,
+		SignedBlocksWindow:      signedBlocksWindow,
+		MinSignedPerWindow:      minSignedPerWindow,
+		DowntimeJailDuration:    downtimeJailDuration.Seconds(),
+		SlashFractionDowntime:   slashFractionDowntime,
+		SlashFractionDoubleSign: slashFractionDoubleSign,
+		Validators:              validatorUptimeStatus,
 	}, nil
 }

@@ -196,20 +196,38 @@ func CosmosSlashingParser(resp []byte) (consensusAddress string, indexOffset flo
 	return result.ValidatorSigningInfo.ConsensusAddress, indexOffset, isTomstoned, missedBlocksCounter, nil
 }
 
-func CosmosSlashingParamsParser(resp []byte) (signedBlocksWindow float64, minSignedPerWindow float64, err error) {
+func CosmosSlashingParamsParser(resp []byte) (
+	signedBlocksWindow float64,
+	minSignedPerWindow float64,
+	downtimeJailDuration time.Duration,
+	slashFractionDowntime float64,
+	slashFractionDoubleSign float64,
+	err error) {
 	var result types.CosmosSlashingParamsResponse
 	if err := json.Unmarshal(resp, &result); err != nil {
-		return 0, 0, err
+		return 0, 0, 0, 0, 0, err
 	}
 	signedBlocksWindow, err = strconv.ParseFloat(result.Params.SignedBlocksWindow, 64)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, 0, 0, err
 	}
 	minSignedPerWindow, err = strconv.ParseFloat(result.Params.MinSignedPerWindow, 64)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, 0, 0, err
 	}
-	return signedBlocksWindow, minSignedPerWindow, nil
+	downtimeJailDuration, err = time.ParseDuration(result.Params.DowntimeJailDuration)
+	if err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+	slashFractionDowntime, err = strconv.ParseFloat(result.Params.SlashFractionDowntime, 64)
+	if err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+	slashFractionDoubleSign, err = strconv.ParseFloat(result.Params.SlashFractionDoubleSign, 64)
+	if err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+	return signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, nil
 }
 
 // this function return two events but one of them will be empty events
