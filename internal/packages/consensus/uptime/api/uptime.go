@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/hex"
+	"math/big"
 	"sort"
 	"strconv"
 	"sync"
@@ -91,9 +92,9 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 		consensusAddress := pubkeysMap[item.ConsensusPubkey.Key]
 		queryPath := queryPathFunction(consensusAddress)
 
-		stakedTokens, err := strconv.ParseInt(item.Tokens, 10, 64)
+		stakedTokens, err := strconv.ParseFloat(item.Tokens, 64)
 		if err != nil {
-			c.Warnf("Staked tokens parsing error, assuming 0: %s", err)
+			c.Warnf("staked tokens parsing error, assuming 0: %s ", err)
 			stakedTokens = 0
 		}
 
@@ -134,7 +135,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 					MissedBlockCounter:        missedBlocksCounter,
 					IsTomstoned:               isTomstoned,
 					ValidatorOperatorAddress:  validatorOperatorAddress,
-					StakedTokens:              int(stakedTokens),
+					StakedTokens:              stakedTokens,
 					CommissionRate:            commissionRate,
 				}}
 		}(ch)
@@ -306,11 +307,19 @@ func getUptimeParams(c common.CommonClient, chainName string) (
 	return signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, nil
 }
 
+// As the exact number of  staked token can get really big we need to use big.Int to
+// correctly compare the stake and order the validators.
+// The precision is ONLY required for doing math calculations, for all other purposes we use float64 or string.
 func sliceStakingValidatorByVP(stakingValidators []commontypes.CosmosStakingValidator, totalConsensusValidators int) []commontypes.CosmosStakingValidator {
 	sort.Slice(stakingValidators, func(i, j int) bool {
-		tokensI, _ := strconv.ParseInt(stakingValidators[i].Tokens, 10, 64)
-		tokensJ, _ := strconv.ParseInt(stakingValidators[j].Tokens, 10, 64)
-		return tokensI > tokensJ // Sort in descending order
+		tokensI, _ := new(big.Int).SetString(stakingValidators[i].Tokens, 10)
+		tokensJ, _ := new(big.Int).SetString(stakingValidators[j].Tokens, 10)
+
+		if tokensI.Cmp(tokensJ) == 1 {
+			return true
+		} else {
+			return false
+		}
 	})
 	return stakingValidators[:totalConsensusValidators]
 }
