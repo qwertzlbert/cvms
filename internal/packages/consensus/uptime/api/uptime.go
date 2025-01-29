@@ -91,6 +91,18 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 		consensusAddress := pubkeysMap[item.ConsensusPubkey.Key]
 		queryPath := queryPathFunction(consensusAddress)
 
+		stakedTokens, err := strconv.ParseInt(item.Tokens, 10, 64)
+		if err != nil {
+			c.Warnf("Staked tokens parsing error, assuming 0: %s", err)
+			stakedTokens = 0
+		}
+
+		commissionRate, err := strconv.ParseFloat(item.Commission.CommissionRates.Rate, 64)
+		if err != nil {
+			c.Warnf("Commission rate parsing error, assuming 0: %s", err)
+			commissionRate = 0
+		}
+
 		go func(ch chan helper.Result) {
 			defer helper.HandleOutOfNilResponse(c.Entry)
 			defer wg.Done()
@@ -113,12 +125,6 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 				return
 			}
 
-			stakedTokens, err := strconv.ParseInt(item.Tokens, 10, 64)
-			if err != nil {
-				c.Warnf("Staked tokens parsing error, assuming 0: %s", err)
-				stakedTokens = 0
-			}
-
 			ch <- helper.Result{
 				Success: true,
 				Item: types.ValidatorUptimeStatus{
@@ -129,6 +135,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 					IsTomstoned:               isTomstoned,
 					ValidatorOperatorAddress:  validatorOperatorAddress,
 					StakedTokens:              int(stakedTokens),
+					CommissionRate:            commissionRate,
 				}}
 		}(ch)
 		time.Sleep(10 * time.Millisecond)

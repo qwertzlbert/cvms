@@ -32,6 +32,7 @@ const (
 	bondedValidatorsTotalMetricName   = "bonded_validators_total"
 	activeValidatorsTotalMetricName   = "active_validators_total"
 	minSeatPriceMetric                = "min_seat_price"
+	validatorCommissionMetric         = "validator_commission_rate"
 )
 
 func Start(p common.Packager) error {
@@ -105,6 +106,19 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		common.ProposerAddressLabel,
 	})
 
+	validatorCommissionMetric := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        validatorCommissionMetric,
+		Help:        "The commission rate of a validator",
+		ConstLabels: packageLabels,
+	}, []string{
+		common.MonikerLabel,
+		common.ValidatorAddressLabel,
+		common.ConsensusAddressLabel,
+		common.ProposerAddressLabel,
+	})
+
 	// metrics for each chain
 	signedBlocksWindowMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
 		Namespace:   common.Namespace,
@@ -153,7 +167,6 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		Help:        "The total number of active validators",
 		ConstLabels: packageLabels,
 	})
-
 	minSeatPriceMetric := p.Factory.NewGauge(prometheus.GaugeOpts{
 		Namespace:   common.Namespace,
 		Subsystem:   Subsystem,
@@ -229,6 +242,15 @@ func loop(exporter *common.Exporter, p common.Packager) {
 					}).
 					Set(float64(item.StakedTokens))
 
+				validatorCommissionMetric.
+					With(prometheus.Labels{
+						common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
+						common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
+						common.ProposerAddressLabel:  item.ProposerAddress,
+						common.MonikerLabel:          item.Moniker,
+					}).
+					Set(item.CommissionRate)
+
 			}
 		} else {
 			// update metrics by each validators
@@ -258,7 +280,14 @@ func loop(exporter *common.Exporter, p common.Packager) {
 							common.MonikerLabel:          item.Moniker,
 						}).
 						Set(float64(item.StakedTokens))
-
+					validatorCommissionMetric.
+						With(prometheus.Labels{
+							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
+							common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
+							common.ProposerAddressLabel:  item.ProposerAddress,
+							common.MonikerLabel:          item.Moniker,
+						}).
+						Set(item.CommissionRate)
 				}
 			}
 		}
