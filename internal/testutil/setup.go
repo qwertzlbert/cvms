@@ -87,7 +87,7 @@ func GetTestExporter() *common.Exporter {
 	restyLogger.Out = io.Discard
 	RPCClient := client.NewRestyClient().SetLogger(restyLogger)
 	APIClient := client.NewRestyClient().SetLogger(restyLogger)
-	GRPCClient := client.NewGrpcClient().SetLogger(restyLogger)
+	GRPCClient := client.NewGrpcClient(common.Timeout).SetLogger(restyLogger)
 	entry := l.WithField("mode", "test")
 	monikers := []string{"Cosmostation"}
 	commonClient := common.CommonClient{
