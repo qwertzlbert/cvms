@@ -53,7 +53,12 @@ func (gc *GrpcClient) SetEndpoint(endpoint string) Client {
 	gCreds := credentials.NewTLS(tlsConf)
 
 	// Simple handshake check to determine if the server supports TLS
-	conn, err := tls.Dial("tcp", endpoint, tlsConf)
+	dialer := &tls.Dialer{
+		Config: tlsConf,
+	}
+	ctx, ctxCancel := context.WithTimeout(context.Background(), gc.timeout)
+	conn, err := dialer.DialContext(ctx, "tcp", endpoint)
+	// conn, err := Dialer.DialContext("tcp", endpoint, tlsConf)
 	if err != nil {
 		var recordHeaderError tls.RecordHeaderError
 		if errors.As(err, &recordHeaderError) {
@@ -62,6 +67,7 @@ func (gc *GrpcClient) SetEndpoint(endpoint string) Client {
 
 		} else {
 			gc.logger.Errorf("error setting up gRPC connection: %s", err.Error())
+			ctxCancel()
 			return nil
 		}
 	} else {
