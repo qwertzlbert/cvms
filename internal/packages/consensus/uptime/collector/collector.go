@@ -35,6 +35,7 @@ const (
 	activeValidatorsTotalMetricName   = "active_validators_total"
 	minSeatPriceMetric                = "min_seat_price"
 	validatorCommissionMetric         = "validator_commission_rate"
+	validatorRankMetricName           = "validator_rank"
 )
 
 func Start(p common.Packager) error {
@@ -125,6 +126,18 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		Subsystem:   Subsystem,
 		Name:        validatorCommissionMetric,
 		Help:        "The commission rate of a validator",
+		ConstLabels: packageLabels,
+	}, []string{
+		common.MonikerLabel,
+		common.ValidatorAddressLabel,
+		common.ConsensusAddressLabel,
+		common.ProposerAddressLabel,
+	})
+	validatorRankMetric := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        validatorRankMetricName,
+		Help:        "The position of a validator based on their stake",
 		ConstLabels: packageLabels,
 	}, []string{
 		common.MonikerLabel,
@@ -273,6 +286,15 @@ func loop(exporter *common.Exporter, p common.Packager) {
 					}).
 					Set(item.CommissionRate)
 
+				validatorRankMetric.
+					With(prometheus.Labels{
+						common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
+						common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
+						common.ProposerAddressLabel:  item.ProposerAddress,
+						common.MonikerLabel:          item.Moniker,
+					}).
+					Set(float64(item.ValidatorRank))
+
 			}
 		} else {
 			// update metrics by each validators
@@ -318,6 +340,15 @@ func loop(exporter *common.Exporter, p common.Packager) {
 							common.MonikerLabel:          item.Moniker,
 						}).
 						Set(item.CommissionRate)
+
+					validatorRankMetric.
+						With(prometheus.Labels{
+							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
+							common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
+							common.ProposerAddressLabel:  item.ProposerAddress,
+							common.MonikerLabel:          item.Moniker,
+						}).
+						Set(float64(item.ValidatorRank))
 				}
 			}
 		}

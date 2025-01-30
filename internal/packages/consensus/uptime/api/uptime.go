@@ -91,7 +91,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 	validatorResult := make([]types.ValidatorUptimeStatus, 0)
 	wg.Add(len(orderedStakingValidators))
 
-	for _, item := range orderedStakingValidators {
+	for idx, item := range orderedStakingValidators {
 		// set query path
 		moniker := item.Description.Moniker
 		proposerAddress, _ := sdkhelper.ProposerAddressFromPublicKey(item.ConsensusPubkey.Key)
@@ -99,6 +99,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 		consensusAddress := pubkeysMap[item.ConsensusPubkey.Key]
 		queryPath := queryPathFunction(consensusAddress)
 		vp := vpMap[item.ConsensusPubkey.Key]
+		validatorRank := idx + 1 // need to add 1 for human-readable rank as index starts from 0
 
 		stakedTokens, err := strconv.ParseFloat(item.Tokens, 64)
 		if err != nil {
@@ -146,6 +147,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 					VotingPower:               vp,
 					StakedTokens:              stakedTokens,
 					CommissionRate:            commissionRate,
+					ValidatorRank:             validatorRank,
 				}}
 		}(ch)
 		time.Sleep(10 * time.Millisecond)

@@ -29,6 +29,7 @@ type ValidatorUptimeStatus struct {
 	IsTomstoned               float64
 	StakedTokens              float64
 	CommissionRate            float64
+	ValidatorRank             int
 	// Only Consumer Chain
 	ConsumerConsensusAddress string `json:"consumer_consensus_address"`
 }
