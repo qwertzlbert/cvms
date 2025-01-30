@@ -78,7 +78,7 @@ type CommonApp struct {
 func NewCommonApp(p Packager) CommonApp {
 	rpcClient := client.NewRestyClient().SetLogger(p.Logger)
 	apiClient := client.NewRestyClient().SetLogger(p.Logger)
-	grpcClient := client.NewGrpcClient().SetLogger(p.Logger)
+	grpcClient := client.NewGrpcClient(Timeout).SetLogger(p.Logger)
 	entry := p.Logger.WithFields(
 		logrus.Fields{
 			logger.FieldKeyChain:   p.ChainName,
@@ -123,6 +123,6 @@ func (c *CommonClient) GetGRPCEndPoint() string {
 func NewOptionalClient(entry *logrus.Entry) CommonClient {
 	rpcClient := client.NewRestyClient().SetLogger(entry.Logger)
 	apiClient := client.NewRestyClient().SetLogger(entry.Logger)
-	grpcClient := client.NewGrpcClient().SetLogger(entry.Logger)
+	grpcClient := client.NewGrpcClient(Timeout).SetLogger(entry.Logger)
 	return CommonClient{rpcClient, apiClient, grpcClient, entry}
 }
