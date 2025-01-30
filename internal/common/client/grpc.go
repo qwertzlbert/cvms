@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/sirupsen/logrus"
@@ -30,6 +31,7 @@ type GrpcClient struct {
 	client   *grpc.ClientConn
 	endpoint string
 	logger   *logrus.Logger
+	timeout  time.Duration
 	headers  map[string]string
 }
 
@@ -51,22 +53,28 @@ func (gc *GrpcClient) SetEndpoint(endpoint string) Client {
 	gCreds := credentials.NewTLS(tlsConf)
 
 	// Simple handshake check to determine if the server supports TLS
-	conn, err := tls.Dial("tcp", endpoint, tlsConf)
+	dialer := &tls.Dialer{
+		Config: tlsConf,
+	}
+	ctx, ctxCancel := context.WithTimeout(context.Background(), gc.timeout)
+	conn, err := dialer.DialContext(ctx, "tcp", endpoint)
+	// conn, err := Dialer.DialContext("tcp", endpoint, tlsConf)
 	if err != nil {
 		var recordHeaderError tls.RecordHeaderError
 		if errors.As(err, &recordHeaderError) {
-			gc.logger.Warnf("TLS handshake failed")
+			gc.logger.Warnf("TLS handshake failed for endpoint: %s", endpoint)
 			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 		} else {
 			gc.logger.Errorf("error setting up gRPC connection: %s", err.Error())
+			ctxCancel()
 			return nil
 		}
 	} else {
 		conn.Close()
 		dialOptions = append(dialOptions, grpc.WithTransportCredentials(gCreds))
 	}
-
+	ctxCancel()
 	client, err := grpc.NewClient(endpoint, dialOptions...)
 	if err != nil {
 		gc.logger.Errorf("error setting up grpc client: %s", err.Error())
@@ -178,8 +186,10 @@ func (gc *GrpcClient) Post(ctx context.Context, uri string, body ...[]byte) ([]b
 	return respJSON, nil
 }
 
-func NewGrpcClient() *GrpcClient {
-	gc := &GrpcClient{}
+func NewGrpcClient(timeout time.Duration) *GrpcClient {
+	gc := &GrpcClient{
+		timeout: timeout,
+	}
 	return gc
 }
 
