@@ -215,7 +215,8 @@ func GetBabylonBTCLightClientParams(c common.CommonClient) ([]string, error) {
 	requester := c.APIClient
 	resp, err := requester.Get(ctx, types.BabylonBTCLightClientParamsQueryPath)
 	if err != nil {
-		return nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
+		endpoint, _ := requester.GetEndpoint()
+		return nil, errors.Errorf("rpc call is failed from %s: %s", endpoint, err)
 	}
 
 	allowList, err := parser.ParserBTCLightClientParams(resp)
