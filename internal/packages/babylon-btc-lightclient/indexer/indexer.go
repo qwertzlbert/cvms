@@ -193,7 +193,9 @@ func (idx *BTCLightClientIndexer) FetchValidatorInfoList() error {
 
 	// when the this pacakge starts, set validator-id map
 	for _, validator := range validatorInfoList {
-		idx.Vim[validator.HexAddress] = int64(validator.ID)
+		if validator.Moniker == "Babylon Vigilante Reporter" {
+			idx.Vim[validator.OperatorAddress] = int64(validator.ID)
+		}
 	}
 
 	return nil
