@@ -839,7 +839,7 @@ neutron-1:
     - uptime
     - voteindexer
     - veindexer
-nillion:
+nillion-1:
   chain_name: nillion
   protocol_type: cosmos
   mainnet: true
