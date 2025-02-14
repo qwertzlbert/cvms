@@ -46,7 +46,7 @@ func (vidx *VoteIndexer) Start() error {
 			return errors.Wrap(err, "failed to init chain_info_id")
 		}
 
-		alreadyInit, err := vidx.repo.CheckIndexpoinerAlreadyInitialized(repository.IndexName, vidx.ChainInfoID)
+		alreadyInit, err := vidx.repo.CheckIndexPointerAlreadyInitialized(repository.IndexName, vidx.ChainInfoID)
 		if err != nil {
 			return errors.Wrap(err, "failed to check init tables")
 		}

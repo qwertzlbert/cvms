@@ -16,6 +16,7 @@ const (
 	IndexPointerBlockTimestampMetricName = "latest_index_pointer_block_timestamp"
 	LatestBlockHeightMetricName          = "latest_block_height"
 	RecentMissCounterMetricName          = "recent_miss_counter"
+	CovenantSigCountMetricName           = "covenant_sigs_count"
 )
 
 type Indexer struct {
@@ -30,13 +31,15 @@ type Indexer struct {
 	MonikerIDMap indexertypes.MonikerIDMap
 	Endpoints
 	*IndexerDB
-	Vim           indexertypes.ValidatorIDMap
-	Lh            indexertypes.LatestHeightCache
-	Factory       promauto.Factory
-	MetricsMap    map[string]prometheus.Gauge
-	MetricsVecMap map[string]*prometheus.GaugeVec
-	RootLabels    prometheus.Labels
-	PackageLabels prometheus.Labels
+	Vim                indexertypes.ValidatorIDMap
+	VAM                indexertypes.ValidatorAddressMap
+	Lh                 indexertypes.LatestHeightCache
+	Factory            promauto.Factory
+	MetricsMap         map[string]prometheus.Gauge
+	MetricsVecMap      map[string]*prometheus.GaugeVec
+	MetricsCountVecMap map[string]*prometheus.CounterVec
+	RootLabels         prometheus.Labels
+	PackageLabels      prometheus.Labels
 }
 
 // TODO: not implemented
@@ -81,12 +84,14 @@ func NewIndexer(p Packager, subsystem string, chainID string) *Indexer {
 		Endpoints:    p.Endpoints,
 		IndexerDB:    p.IndexerDB,
 		Vim:          make(indexertypes.ValidatorIDMap, 0),
+		VAM:          make(indexertypes.ValidatorAddressMap, 0),
 		// skip latestHeightCache
-		Factory:       p.Factory,
-		MetricsMap:    map[string]prometheus.Gauge{},
-		MetricsVecMap: map[string]*prometheus.GaugeVec{},
-		RootLabels:    BuildRootLabels(p),
-		PackageLabels: BuildPackageLabels(p),
+		Factory:            p.Factory,
+		MetricsMap:         map[string]prometheus.Gauge{},
+		MetricsVecMap:      map[string]*prometheus.GaugeVec{},
+		MetricsCountVecMap: map[string]*prometheus.CounterVec{},
+		RootLabels:         BuildRootLabels(p),
+		PackageLabels:      BuildPackageLabels(p),
 	}
 }
 

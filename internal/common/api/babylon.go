@@ -215,3 +215,25 @@ func GetBabylonBTCLightClientParams(c common.CommonClient) ([]string, error) {
 
 	return allowList, nil
 }
+
+func GetBalbylonCovenantCommiteeParams(c common.CommonClient) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
+	defer cancel()
+
+	requester := c.APIClient.R().SetContext(ctx)
+	resp, err := requester.Get(types.BabylonCovenantCommitteeParamsQueryPath)
+	if err != nil {
+		return []string{}, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return []string{}, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+	}
+
+	covenantCommittee, err := parser.ParserCovenantCommiteeParams(resp.Body())
+	if err != nil {
+		return []string{}, errors.WithStack(err)
+	}
+
+	return covenantCommittee, nil
+}

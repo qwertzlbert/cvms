@@ -130,6 +130,7 @@ func NewTestLoaclIndexerDB(tempDBName string) (*IndexerDB, error) {
 	// Clean up
 	_, err = sqldb.Exec(fmt.Sprintf("DROP DATABASE %s;", tempDBName))
 	if err != nil {
+		log.Fatalf("%s", err)
 		panic("failed to clean up temp db")
 	}
 

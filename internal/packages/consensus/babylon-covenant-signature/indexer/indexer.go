@@ -4,39 +4,42 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/pkg/errors"
-
+	"github.com/cosmostation/cvms/internal/common"
+	commonapi "github.com/cosmostation/cvms/internal/common/api"
+	"github.com/cosmostation/cvms/internal/common/indexer/model"
+	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
 	"github.com/cosmostation/cvms/internal/helper"
 	"github.com/cosmostation/cvms/internal/helper/db"
 	"github.com/cosmostation/cvms/internal/helper/healthcheck"
-
-	"github.com/cosmostation/cvms/internal/common"
-	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
-	"github.com/cosmostation/cvms/internal/packages/duty/finality-provider-indexer/repository"
+	"github.com/cosmostation/cvms/internal/packages/consensus/babylon-covenant-signature/repository"
+	"github.com/pkg/errors"
 )
 
-var subsystem = "babylon_finality_provider_vote"
+var subsystem = "babylon_committee"
 
-type FinalityProviderIndexer struct {
+type CovenantSignatureIndexer struct {
 	*common.Indexer
-	repo repository.FinalityProviderIndexerRepository
+	repo                 repository.CovenantSignatureRepository
+	earliestBlockHeight  int64
+	covenantCommitteeMap map[string]int64
 }
 
-// Compile-time Assertion
-var _ common.IIndexer = (*FinalityProviderIndexer)(nil)
+// var _ common.IIndexer = (*CovenantSignatureIndexer)(nil)
 
-func NewFinalityProviderIndexer(p common.Packager) (*FinalityProviderIndexer, error) {
+func NewCovenantSignatureIndexer(p common.Packager) (*CovenantSignatureIndexer, error) {
 	status := helper.GetOnChainStatus(p.RPCs, p.ProtocolType)
 	if status.ChainID == "" {
-		return nil, errors.Errorf("failed to create new voteindexer by failing getting onchain status through %v", p.RPCs)
+		return nil, errors.Errorf("failed to create a new covenant signature indexer: %v", status)
 	}
+
 	indexer := common.NewIndexer(p, p.Package, status.ChainID)
+
 	repo := repository.NewRepository(*p.IndexerDB, indexertypes.SQLQueryMaxDuration)
 	indexer.Lh = indexertypes.LatestHeightCache{LatestHeight: status.BlockHeight}
-	return &FinalityProviderIndexer{indexer, repo}, nil
+	return &CovenantSignatureIndexer{indexer, repo, status.EarliestBlockHeight, make(map[string]int64, 0)}, nil
 }
 
-func (idx *FinalityProviderIndexer) Start() error {
+func (idx *CovenantSignatureIndexer) Start() error {
 	err := idx.InitChainInfoID()
 	if err != nil {
 		return errors.Wrap(err, "failed to init chain_info_id")
@@ -48,8 +51,9 @@ func (idx *FinalityProviderIndexer) Start() error {
 	}
 	if !alreadyInit {
 		idx.Warnf("it's not initialized in the database, so that this package will initalize at %d as a init index point", idx.Lh.LatestHeight)
-		idx.repo.InitPartitionTablesByChainInfoID(repository.IndexName, idx.ChainID, idx.Lh.LatestHeight)
-		idx.repo.CreateFinalityProviderInfoPartitionTableByChainID(idx.ChainID)
+		idx.Warnf("%s,%s,%d", repository.IndexName, idx.ChainID, idx.Lh.LatestHeight)
+		idx.repo.InitPartitionTablesByChainInfoID(repository.IndexName, idx.ChainID, idx.earliestBlockHeight)
+		idx.repo.CreateCovenantCommitteeInfoPartitionTableByChainID(idx.ChainID)
 	}
 
 	// get last index pointer, index pointer is always initalize if not exist
@@ -58,28 +62,44 @@ func (idx *FinalityProviderIndexer) Start() error {
 		return errors.Wrap(err, "failed to get last index pointer")
 	}
 
-	err = idx.FetchValidatorInfoList()
+	err = idx.FetchCovenantCommitteeList()
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch validator_info list")
+		return errors.Wrap(err, "failed to fetch covenant committee list")
 	}
 
-	idx.Infof("loaded index pointer(last saved height): %d", initIndexPointer.Pointer)
-	idx.Infof("initial vim length: %d for %s chain", len(idx.Vim), idx.ChainID)
+	// initialize babylon covenant committee
+	if len(idx.covenantCommitteeMap) <= 0 {
+		newCovenantCommitteeInfoList := []model.CovenantCommitteeInfo{}
+		covenantCommittee, err := commonapi.GetBalbylonCovenantCommiteeParams(idx.CommonClient)
+		if err != nil {
+			return errors.Wrap(err, "failed to get covenant committee params")
+		}
+		for _, committee := range covenantCommittee {
+			newCovenantCommitteeInfoList = append(newCovenantCommitteeInfoList, model.CovenantCommitteeInfo{
+				ChainInfoID:   idx.ChainInfoID,
+				CovenantBtcPk: committee,
+			})
+		}
+
+		idx.repo.InsertCovenantCommitteeInfoList(newCovenantCommitteeInfoList)
+		err = idx.FetchCovenantCommitteeList()
+		if err != nil {
+			return errors.Wrap(err, "failed to fetch covenant committee list")
+		}
+	}
+
+	idx.Infof("loaded last index pointer: %d", initIndexPointer.Pointer)
 
 	// init indexer metrics
 	idx.initLabelsAndMetrics()
+	idx.initMetricState(idx.covenantCommitteeMap)
+
 	// go fetch new height in loop, it must be after init metrics
 	go idx.FetchLatestHeight()
+
 	// loop
 	go idx.Loop(initIndexPointer.Pointer)
-	// loop update recent miss counter metrics
-	// go func() {
-	// 	for {
-	// 		idx.Infoln("update recent miss counter metrics and sleep 5s sec...")
-	// 		idx.updateRecentMissCounterMetric()
-	// 		time.Sleep(time.Second * 5)
-	// 	}
-	// }()
+
 	// loop partion table time retention by env parameter
 	go func() {
 		if idx.RetentionPeriod == db.PersistenceMode {
@@ -88,14 +108,40 @@ func (idx *FinalityProviderIndexer) Start() error {
 		}
 		for {
 			idx.Infof("for time retention, delete old records over %s and sleep %s", idx.RetentionPeriod, indexertypes.RetentionQuerySleepDuration)
-			idx.repo.DeleteOldFinalityProviderVoteList(idx.ChainID, idx.RetentionPeriod)
+			idx.repo.DeleteOldCovenantSignatureList(idx.ChainID, idx.RetentionPeriod)
 			time.Sleep(indexertypes.RetentionQuerySleepDuration)
 		}
 	}()
+
 	return nil
 }
 
-func (idx *FinalityProviderIndexer) Loop(indexPoint int64) {
+// insert chain-info into chain_info table
+func (idx *CovenantSignatureIndexer) InitChainInfoID() error {
+	isNewChain := false
+	var chainInfoID int64
+	chainInfoID, err := idx.repo.SelectChainInfoIDByChainID(idx.ChainID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			idx.Infof("this is new chain id: %s", idx.ChainID)
+			isNewChain = true
+		} else {
+			return errors.Wrap(err, "failed to select chain_info_id by chain-id")
+		}
+	}
+
+	if isNewChain {
+		chainInfoID, err = idx.repo.InsertChainInfo(idx.ChainName, idx.ChainID, idx.Mainnet)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert new chain_info_id by chain-id")
+		}
+	}
+
+	idx.ChainInfoID = chainInfoID
+	return nil
+}
+
+func (idx *CovenantSignatureIndexer) Loop(indexPoint int64) {
 	isUnhealth := false
 	for {
 		// node health check
@@ -123,14 +169,17 @@ func (idx *FinalityProviderIndexer) Loop(indexPoint int64) {
 				continue
 			}
 		}
+		newIndexPointerHeight := indexPoint + 1
 
 		// trying to sync with new index pointer height
-		newIndexPointer, err := idx.batchSync(indexPoint)
+		newIndexPointer, err := idx.batchSync(indexPoint, newIndexPointerHeight)
 		if err != nil {
 			common.Health.With(idx.RootLabels).Set(0)
 			common.Ops.With(idx.RootLabels).Inc()
 			isUnhealth = true
-			idx.Errorf("failed to sync in %d height: %s, it will be retried after sleep %s...", indexPoint, err, indexertypes.AfterFailedFetchSleepDuration.String())
+			idx.Errorf("failed to sync status in %d epoch: %s, it will be retried after sleep %s...",
+				indexPoint, err, indexertypes.AfterFailedRetryTimeout.String(),
+			)
 			time.Sleep(indexertypes.AfterFailedRetryTimeout)
 			continue
 		}
@@ -143,7 +192,7 @@ func (idx *FinalityProviderIndexer) Loop(indexPoint int64) {
 		common.Ops.With(idx.RootLabels).Inc()
 
 		// logging & sleep
-		if (idx.Lh.LatestHeight - 1) > indexPoint {
+		if idx.Lh.LatestHeight > indexPoint {
 			// when node catching_up is true, sleep 100 milli sec
 			idx.WithField("catching_up", true).
 				Infof("latest height is %d but updated index pointer is %d ... remaining %d blocks", idx.Lh.LatestHeight, indexPoint, (idx.Lh.LatestHeight - indexPoint))
@@ -157,42 +206,16 @@ func (idx *FinalityProviderIndexer) Loop(indexPoint int64) {
 	}
 }
 
-// TODO: move into metarepo
-// insert chain-info into chain_info table
-func (idx *FinalityProviderIndexer) InitChainInfoID() error {
-	isNewChain := false
-	var chainInfoID int64
-	chainInfoID, err := idx.repo.SelectChainInfoIDByChainID(idx.ChainID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			idx.Infof("this is new chain id: %s", idx.ChainID)
-			isNewChain = true
-		} else {
-			return errors.Wrap(err, "failed to select chain_info_id by chain-id")
-		}
-	}
-
-	if isNewChain {
-		chainInfoID, err = idx.repo.InsertChainInfo(idx.ChainName, idx.ChainID, idx.Mainnet)
-		if err != nil {
-			return errors.Wrap(err, "failed to insert new chain_info_id by chain-id")
-		}
-	}
-
-	idx.ChainInfoID = chainInfoID
-	return nil
-}
-
-// NOTE: in finality provider, validator info means fp info
-func (idx *FinalityProviderIndexer) FetchValidatorInfoList() error {
-	// get already saved validator-set list for mapping validators ids
-	fpInfoList, err := idx.repo.GetFinalityProviderInfoListByChainInfoID(idx.ChainInfoID)
+func (idx *CovenantSignatureIndexer) FetchCovenantCommitteeList() error {
+	// get already saved covenant committee members list for mapping covenant committee ids
+	covenantCommitteeInfoList, err := idx.repo.GetCovenantCommitteeInfoListByChainInfoID(idx.ChainInfoID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator info list")
 	}
 
-	for _, fp := range fpInfoList {
-		idx.Vim[fp.BTCPKs] = int64(fp.ID)
+	// when the this pacakge starts, set committee-id map
+	for _, committee := range covenantCommitteeInfoList {
+		idx.covenantCommitteeMap[committee.CovenantBtcPk] = int64(committee.ID)
 	}
 
 	return nil
