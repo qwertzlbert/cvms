@@ -75,9 +75,7 @@ CREATE TABLE
 PARTITION BY
     LIST ("chain_info_id");
 
-
 CREATE TABLE
-    -- not decided table name 
     IF NOT EXISTS "meta"."verifier_info" (
         "id" BIGINT GENERATED ALWAYS AS IDENTITY,
         "chain_info_id" INT NOT NULL,
@@ -88,4 +86,4 @@ CREATE TABLE
         CONSTRAINT uniq_verifier_by_chain UNIQUE (chain_info_id, verifier_address)
     )
 PARTITION BY
-    LIST ("chain_info_id");    
+    LIST ("chain_info_id");  
