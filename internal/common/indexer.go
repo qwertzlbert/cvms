@@ -17,6 +17,7 @@ const (
 	LatestBlockHeightMetricName          = "latest_block_height"
 	RecentMissCounterMetricName          = "recent_miss_counter"
 	CovenantSigCountMetricName           = "covenant_sigs_count"
+	BtcDelegationCountTotalMetricName    = "btc_delegation_count_total"
 )
 
 type Indexer struct {
@@ -32,11 +33,11 @@ type Indexer struct {
 	Endpoints
 	*IndexerDB
 	Vim                indexertypes.ValidatorIDMap
-	VAM                indexertypes.ValidatorAddressMap
 	Lh                 indexertypes.LatestHeightCache
 	Factory            promauto.Factory
 	MetricsMap         map[string]prometheus.Gauge
 	MetricsVecMap      map[string]*prometheus.GaugeVec
+	MetricsCountMap    map[string]prometheus.Counter
 	MetricsCountVecMap map[string]*prometheus.CounterVec
 	RootLabels         prometheus.Labels
 	PackageLabels      prometheus.Labels
@@ -84,10 +85,10 @@ func NewIndexer(p Packager, subsystem string, chainID string) *Indexer {
 		Endpoints:    p.Endpoints,
 		IndexerDB:    p.IndexerDB,
 		Vim:          make(indexertypes.ValidatorIDMap, 0),
-		VAM:          make(indexertypes.ValidatorAddressMap, 0),
 		// skip latestHeightCache
 		Factory:            p.Factory,
 		MetricsMap:         map[string]prometheus.Gauge{},
+		MetricsCountMap:    map[string]prometheus.Counter{},
 		MetricsVecMap:      map[string]*prometheus.GaugeVec{},
 		MetricsCountVecMap: map[string]*prometheus.CounterVec{},
 		RootLabels:         BuildRootLabels(p),
