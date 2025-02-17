@@ -88,7 +88,7 @@ func (vidx *VoteIndexer) Start() error {
 		// loop update recent miss counter metrics
 		go func() {
 			for {
-				vidx.Infoln("update recent miss counter metrics and sleep 5s sec...")
+				vidx.Debugln("update recent miss counter metrics and sleep 5s sec...")
 				vidx.updateRecentMissCounterMetric()
 				time.Sleep(time.Second * 5)
 			}

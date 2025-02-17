@@ -33,6 +33,7 @@ type Indexer struct {
 	Endpoints
 	*IndexerDB
 	Vim                indexertypes.ValidatorIDMap
+	VAM                indexertypes.ValidatorAddressMap
 	Lh                 indexertypes.LatestHeightCache
 	Factory            promauto.Factory
 	MetricsMap         map[string]prometheus.Gauge
@@ -85,6 +86,7 @@ func NewIndexer(p Packager, subsystem string, chainID string) *Indexer {
 		Endpoints:    p.Endpoints,
 		IndexerDB:    p.IndexerDB,
 		Vim:          make(indexertypes.ValidatorIDMap, 0),
+		VAM:          make(indexertypes.ValidatorAddressMap, 0),
 		// skip latestHeightCache
 		Factory:            p.Factory,
 		MetricsMap:         map[string]prometheus.Gauge{},
@@ -117,6 +119,6 @@ func (indexer *Indexer) FetchLatestHeight() {
 
 		// if loop is true, update metrics
 		indexer.MetricsMap[LatestBlockHeightMetricName].Set(float64(indexer.Lh.LatestHeight))
-		indexer.Infof("update prometheus metrics %d height", indexer.Lh.LatestHeight)
+		indexer.Debugf("update prometheus metrics %d height", indexer.Lh.LatestHeight)
 	}
 }

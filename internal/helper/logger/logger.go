@@ -125,8 +125,8 @@ func GetTestLogger() *logrus.Logger {
 	logger.SetLevel(logrus.Level(5))
 	logger.SetOutput(os.Stdout)
 	logger.SetReportCaller(true)
-	logger.SetFormatter(&logrus.JSONFormatter{
-		PrettyPrint: true,
+	logger.SetFormatter(&logrus.TextFormatter{
+		ForceColors: true, // Ensure colors appear in terminals that don't support ANSI
 	})
 
 	return logger

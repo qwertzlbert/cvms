@@ -6,6 +6,24 @@ import (
 	"github.com/uptrace/bun"
 )
 
+type VerifierInfo struct {
+	bun.BaseModel `bun:"table:meta.verifier_info"`
+
+	ID              int64  `bun:"id,pk,autoincrement"`
+	ChainInfoID     int64  `bun:"chain_info_id,pk,notnull"`
+	VerifierAddress string `bun:"verifier_address"`
+	Moniker         string `bun:"moniker"`
+}
+
+func (vi VerifierInfo) String() string {
+	return fmt.Sprintf("VerifierInfo<%d %d %s %s>",
+		vi.ID,
+		vi.ChainInfoID,
+		vi.VerifierAddress,
+		vi.Moniker,
+	)
+}
+
 type CovenantCommitteeInfo struct {
 	bun.BaseModel `bun:"table:meta.covenant_committee_info"`
 	ID            int64  `bun:"id,pk,autoincrement"`

@@ -126,7 +126,7 @@ axelar-dojo-1:
     - uptime
     - axelar-evm
     - voteindexer
-    - axelar_amplifier_verifier
+    - axelar-amplifier-verifier
 axelar-testnet-lisbon-3:
   chain_name: axelar
   protocol_type: cosmos
@@ -140,7 +140,7 @@ axelar-testnet-lisbon-3:
     - uptime
     - axelar-evm
     - voteindexer
-    - axelar_amplifier_verifier
+    - axelar-amplifier-verifier
 band-laozi-testnet6:
   chain_name: band
   protocol_type: cosmos
@@ -179,9 +179,9 @@ bbn-test-5:
     - upgrade
     - uptime
     - voteindexer
-    - babylon_checkpoint
+    - babylon-checkpoint
     - babylon-btc-lightclient
-    - babylon_covenant_signature
+    - babylon-covenant-signature
     - finality-provider-indexer
     - finality-provider-uptime
 bitcanna-1:

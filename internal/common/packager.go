@@ -10,14 +10,15 @@ import (
 
 var (
 	IndexPackages = []string{
-		// consensus
 		"voteindexer",
 		"veindexer",
-		"babylon_checkpoint",
-		"babylon_covenant_signature",
-		"finality-provider-indexer",
+
+		"babylon-checkpoint",
 		"babylon-btc-lightclient",
-		"axelar_amplifier_verifier",
+		"babylon-covenant-signature",
+		"finality-provider-indexer", // TODO: change name to babylon_...
+
+		"axelar-amplifier-verifier",
 	}
 
 	ExporterPackages = []string{

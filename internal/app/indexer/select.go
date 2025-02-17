@@ -4,6 +4,7 @@ import (
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/helper"
 	"github.com/cosmostation/cvms/internal/helper/config"
+	aavindexer "github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/indexer"
 	btclcindexer "github.com/cosmostation/cvms/internal/packages/babylon-btc-lightclient/indexer"
 	bcindexer "github.com/cosmostation/cvms/internal/packages/consensus/babylon-checkpoint/indexer"
 	bcsindexer "github.com/cosmostation/cvms/internal/packages/consensus/babylon-covenant-signature/indexer"
@@ -84,7 +85,7 @@ func selectPackage(
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		return veindexer.Start()
-	case pkg == "babylon_checkpoint":
+	case pkg == "babylon-checkpoint":
 		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {
@@ -130,7 +131,7 @@ func selectPackage(
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		return btclcindexer.Start()
-	case pkg == "babylon_covenant_signature":
+	case pkg == "babylon-covenant-signature":
 		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {
@@ -147,6 +148,18 @@ func selectPackage(
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		return csindexer.Start()
+	case pkg == "axelar_amplifier_verifier":
+		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
+		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
+		if err != nil {
+			return errors.Wrap(err, common.ErrFailedToBuildPackager)
+		}
+		p.SetIndexerDB(idb)
+		aavindexer, err := aavindexer.NewAxelarAmplifierVerifierIndexer(*p)
+		if err != nil {
+			return errors.Wrap(err, common.ErrFailedToBuildPackager)
+		}
+		return aavindexer.Start()
 	}
 
 	return common.ErrUnSupportedPackage
