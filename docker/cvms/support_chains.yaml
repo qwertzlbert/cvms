@@ -1292,6 +1292,18 @@ union-testnet-8:
     - upgrade
     - uptime
     - voteindexer
+union-testnet-9:
+  chain_name: union
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: muno
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer    
 xion-mainnet-1:
   chain_name: xion
   protocol_type: cosmos
