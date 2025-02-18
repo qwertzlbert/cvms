@@ -4,13 +4,19 @@ import (
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/helper"
 	"github.com/cosmostation/cvms/internal/helper/config"
+
+	// axelar specific
 	aavindexer "github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/indexer"
-	btclcindexer "github.com/cosmostation/cvms/internal/packages/babylon-btc-lightclient/indexer"
-	bcindexer "github.com/cosmostation/cvms/internal/packages/consensus/babylon-checkpoint/indexer"
-	bcsindexer "github.com/cosmostation/cvms/internal/packages/consensus/babylon-covenant-signature/indexer"
+
+	// babylon specfic
+	btclcindexer "github.com/cosmostation/cvms/internal/packages/babylon/btc-lightclient/indexer"
+	bcindexer "github.com/cosmostation/cvms/internal/packages/babylon/checkpoint/indexer"
+	bcsindexer "github.com/cosmostation/cvms/internal/packages/babylon/covenant-committee/indexer"
+	bfpindexer "github.com/cosmostation/cvms/internal/packages/babylon/finality-provider/indexer"
+
+	// cosmos native
 	veindexer "github.com/cosmostation/cvms/internal/packages/consensus/veindexer/indexer"
 	voteindexer "github.com/cosmostation/cvms/internal/packages/consensus/voteindexer/indexer"
-	fpindexer "github.com/cosmostation/cvms/internal/packages/duty/finality-provider-indexer/indexer"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
@@ -102,7 +108,7 @@ func selectPackage(
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		return bcindexer.Start()
-	case pkg == "finality-provider-indexer":
+	case pkg == "babylon-finality-provider-indexer":
 		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {
@@ -114,7 +120,7 @@ func selectPackage(
 			p.SetAddtionalEndpoints(providerEndpoints)
 			p.SetConsumer()
 		}
-		fpindexer, err := fpindexer.NewFinalityProviderIndexer(*p)
+		fpindexer, err := bfpindexer.NewFinalityProviderIndexer(*p)
 		if err != nil {
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
@@ -131,24 +137,19 @@ func selectPackage(
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		return btclcindexer.Start()
-	case pkg == "babylon-covenant-signature":
+	case pkg == "babylon-covenant-committee":
 		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		p.SetIndexerDB(idb)
-		if isConsumer {
-			providerEndpoints := common.Endpoints{RPCs: providerRPCs, CheckRPC: true, APIs: providerAPIs, CheckAPI: true}
-			p.SetAddtionalEndpoints(providerEndpoints)
-			p.SetConsumer()
-		}
 		csindexer, err := bcsindexer.NewCovenantSignatureIndexer(*p)
 		if err != nil {
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		return csindexer.Start()
-	case pkg == "axelar_amplifier_verifier":
+	case pkg == "axelar-amplifier-verifier":
 		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {

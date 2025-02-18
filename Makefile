@@ -84,7 +84,7 @@ start-exporter:
 ## start indexer application in debug mode
 start-indexer:
 	@echo "-> Start CVMS Indexer"
-	@go run ./cmd/cvms start indexer --config ${CONFIG_PATH} --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL}
+	@go run ./cmd/cvms start indexer --config ${CONFIG_PATH} --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --indexer-port ${INDEXER_PORT}
 
 ## start exporter application for specific package 
 
@@ -92,14 +92,14 @@ SPECIFIC_PACKAGE ?= block
 start-exporter-specific-package:
 	@echo "-> Start CVMS in script mode, you can use this task adding a argument like 'make start-specific-package SPECIFIC_PACKAGE=eventnonce'"
 	@echo "Selected Package: ${SPECIFIC_PACKAGE}"
-	@go run ./cmd/cvms start exporter --config ./config.yaml --log-color-disable false --log-level 5 --package-filter ${SPECIFIC_PACKAGE}
+	@go run ./cmd/cvms start exporter --config ./config.yaml --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --package-filter ${SPECIFIC_PACKAGE} --port 9200
 
 ### Test runner
 SPECIFIC_PACKAGE ?= voteindexer
 start-indexer-specific-package:
 	@echo "-> Start CVMS in script mode, you can use this task adding a argument like 'make start-specific-package SPECIFIC_PACKAGE=voteindexer'"
 	@echo "Selected Package: ${SPECIFIC_PACKAGE}"
-	@go run ./cmd/cvms start indexer --config ./config.yaml --log-color-disable false --log-level 5 --package-filter ${SPECIFIC_PACKAGE}
+	@go run ./cmd/cvms start indexer --config ./config.yaml --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --package-filter ${SPECIFIC_PACKAGE} --port 9300
 
 ###############################################################################
 ###                             Test Packages                               ###
@@ -200,6 +200,20 @@ test-pkg-uptime:
 
 	@echo "End Unit Testing"
 	@echo 	
+
+# babylon-finality-provider packages
+PACKAGE_NAME_BAYLON_FP   	      := internal/packages/babylon/finality-provider/api
+
+## Unit testing uptime package
+test-pkg-babylon-fp:
+
+	@echo "Start Unit Testing: Current Unit Module is '${PACKAGE_NAME_BAYLON_FP}'"
+
+	@gotest ${MODULE_NAME}/${PACKAGE_NAME_BAYLON_FP}/... -v -count=1
+
+	@echo "End Unit Testing"
+	@echo 	
+
 
 
 ###############################################################################

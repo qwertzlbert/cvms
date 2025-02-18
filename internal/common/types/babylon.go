@@ -55,6 +55,8 @@ type FinalityProviderInfo struct {
 	} `json:"description"`
 	Address string `json:"addr"`
 	BTCPK   string `json:"btc_pk"`
+	Jailed  bool   `json:"jailed"`
+	Active  bool
 }
 
 var BabylonFinalityProvidersQueryPath = func(height int64) string {

@@ -442,7 +442,7 @@
             "uid": "cvms_exporter_db"
           },
           "editorMode": "code",
-          "expr": "round(1 - cvms_finality_provider_uptime_missed_blocks_counter / on (chain_id) group_left cvms_finality_provider_uptime_signed_blocks_window, 0.001) * 100",
+          "expr": "round(1 - cvms_finality_provider_missed_votes_counter / on (chain_id) group_left cvms_finality_provider_signed_votes_window, 0.001) * 100",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,

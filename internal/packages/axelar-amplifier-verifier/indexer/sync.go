@@ -23,7 +23,7 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 	startHeight := (lastIndexPoint + 1)
 	endHeight := (idx.Lh.LatestHeight - blockExpiry)
 	if startHeight > endHeight {
-		idx.Infof("no need to sync from %d height to %d height, so it'll skip the logic", startHeight, endHeight)
+		idx.Debugf("no need to sync from %d height to %d height, so it'll skip the logic", startHeight, endHeight)
 		return lastIndexPoint, nil
 	}
 

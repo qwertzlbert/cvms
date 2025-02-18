@@ -43,8 +43,6 @@ services:
     networks:
       - cvms-net
     restart: unless-stopped
-    depends_on:
-      - exporter
 
   indexer:
     build: .
