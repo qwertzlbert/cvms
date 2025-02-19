@@ -11,7 +11,7 @@ import (
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/types"
 	"github.com/cosmostation/cvms/internal/helper"
-	"github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/model"
+	"github.com/cosmostation/cvms/internal/packages/axelar/amplifier-verifier/model"
 	"github.com/pkg/errors"
 )
 
@@ -234,7 +234,8 @@ func GetPollState(c common.CommonClient, contractAddr, pollID string) (int64, []
 		return 0, nil, errors.Wrap(err, "failed to parse poll state")
 	}
 
-	participants := make([]string, len(result.Data.Poll.Participantion))
+	// participants := make([]string, len(result.Data.Poll.Participantion))
+	participants := make([]string, 0)
 	for key := range result.Data.Poll.Participantion {
 		participants = append(participants, key)
 	}

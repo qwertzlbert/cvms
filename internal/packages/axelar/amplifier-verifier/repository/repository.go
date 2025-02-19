@@ -8,7 +8,7 @@ import (
 	idxmodel "github.com/cosmostation/cvms/internal/common/indexer/model"
 	indexerrepo "github.com/cosmostation/cvms/internal/common/indexer/repository"
 	dbhelper "github.com/cosmostation/cvms/internal/helper/db"
-	"github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/model"
+	"github.com/cosmostation/cvms/internal/packages/axelar/amplifier-verifier/model"
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 )

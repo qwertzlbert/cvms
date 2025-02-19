@@ -8,7 +8,7 @@ import (
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/api"
 	"github.com/cosmostation/cvms/internal/helper/logger"
-	"github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/model"
+	"github.com/cosmostation/cvms/internal/packages/axelar/amplifier-verifier/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -236,36 +236,12 @@ func Test_2_BatchSync_Mainnet(t *testing.T) {
 	err = idx.CreateVerifierInfoPartitionTableByChainID(idx.ChainID)
 	assert.NoError(t, err)
 
-	err = idx.FetchValidatorInfoList()
-	assert.NoError(t, err)
-
-	newIndexPointer, err := idx.batchSync(16702029)
-	assert.NoError(t, err)
-	t.Logf("new index point: %d", newIndexPointer)
-}
-
-func Test_2_BatchSync_Mainnet2(t *testing.T) {
-	tempDBName := "temp"
-	indexerDB, err := common.NewTestLoaclIndexerDB(tempDBName)
-	m.SetIndexerDB(indexerDB)
-	m.IsConsumerChain = false
-	assert.NoError(t, err)
-
-	idx, err := NewAxelarAmplifierVerifierIndexer(m)
-	assert.NoError(t, err)
-
-	err = idx.InitChainInfoID()
-	assert.NoError(t, err)
-
-	err = idx.InitPartitionTablesByChainInfoID(idx.IndexName, idx.ChainID, 1)
-	assert.NoError(t, err)
-
-	err = idx.CreateVerifierInfoPartitionTableByChainID(idx.ChainID)
-	assert.NoError(t, err)
+	idx.initLabelsAndMetrics()
 
 	err = idx.FetchValidatorInfoList()
+
 	assert.NoError(t, err)
-	newIndexPointer, err := idx.batchSync(16702030)
+	newIndexPointer, err := idx.batchSync(16710630) // 16702030
 	assert.NoError(t, err)
 	t.Logf("new index point: %d", newIndexPointer)
 }
