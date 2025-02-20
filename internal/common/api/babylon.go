@@ -231,17 +231,14 @@ func GetBalbylonCovenantCommiteeParams(c common.CommonClient) ([]string, error) 
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(types.BabylonCovenantCommitteeParamsQueryPath)
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, types.BabylonCovenantCommitteeParamsQueryPath)
 	if err != nil {
-		return []string{}, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
+		endpoint, _ := requester.GetEndpoint()
+		return []string{}, errors.Errorf("rpc call is failed from %s: %s", endpoint, err)
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return []string{}, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
-	}
-
-	covenantCommittee, err := parser.ParserCovenantCommiteeParams(resp.Body())
+	covenantCommittee, err := parser.ParserCovenantCommiteeParams(resp)
 	if err != nil {
 		return []string{}, errors.WithStack(err)
 	}
