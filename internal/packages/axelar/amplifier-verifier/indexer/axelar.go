@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/cosmostation/cvms/internal/common"
@@ -219,17 +218,15 @@ func GetPollState(c common.CommonClient, contractAddr, pollID string) (int64, []
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(PollQueryPath(contractAddr, pollID))
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, PollQueryPath(contractAddr, pollID))
 	if err != nil {
-		return 0, nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return 0, nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+		endpoint, _ := requester.GetEndpoint()
+		return 0, nil, errors.Errorf("rpc call is failed from %s: %s", endpoint, err)
 	}
 
 	var result PollStateResponse
-	err = json.Unmarshal(resp.Body(), &result)
+	err = json.Unmarshal(resp, &result)
 	if err != nil {
 		return 0, nil, errors.Wrap(err, "failed to parse poll state")
 	}
@@ -260,17 +257,15 @@ func GetVerifierContractAddressMap(c common.CommonClient, isMainnet bool) (map[s
 		url = "https://github.com/axelarnetwork/axelar-contract-deployments/raw/refs/heads/main/axelar-chains-config/info/testnet.json"
 	}
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(url)
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, url)
 	if err != nil {
-		return nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+		endpoint, _ := requester.GetEndpoint()
+		return nil, errors.Errorf("rpc call is failed from %s: %s", endpoint, err)
 	}
 
 	// Extract chain names and addresses
-	addressMap, err := ParseAxelarChainConfig(resp.Body())
+	addressMap, err := ParseAxelarChainConfig(resp)
 	if err != nil {
 		return nil, err
 	}

@@ -301,32 +301,15 @@ func GetBlockAndTxs(c common.CommonClient, height int64) (
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(types.CosmosBlockTxsQueryPath(height))
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, types.CosmosBlockTxsQueryPath(height))
 	if err != nil {
-		return 0, time.Time{}, nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
-	}
-
-	if resp.StatusCode() == http.StatusBadRequest {
-		var result types.CosmosErrorResponse
-		err = json.Unmarshal(resp.Body(), &result)
-		if err != nil {
-			return 0, time.Time{}, nil, errors.Wrap(err, "failed to unmarshal response")
-		}
-
-		if result.Code == 3 {
-			return height, time.Time{}, []types.CosmosTx{}, nil
-		} else {
-			return 0, time.Time{}, nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
-		}
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return 0, time.Time{}, nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+		endpoint, _ := requester.GetEndpoint()
+		return 0, time.Time{}, nil, errors.Errorf("rpc call is failed from %s: %s", endpoint, err)
 	}
 
 	var result types.CosmosBlockAndTxsResponse
-	err = json.Unmarshal(resp.Body(), &result)
+	err = json.Unmarshal(resp, &result)
 	if err != nil {
 		return 0, time.Time{}, nil, errors.Wrap(err, "failed to unmarshal response")
 	}
