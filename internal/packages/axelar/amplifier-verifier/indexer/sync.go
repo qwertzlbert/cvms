@@ -8,11 +8,9 @@ import (
 	indexermodel "github.com/cosmostation/cvms/internal/common/indexer/model"
 	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
 	"github.com/cosmostation/cvms/internal/helper"
-	"github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/model"
+	"github.com/cosmostation/cvms/internal/packages/axelar/amplifier-verifier/model"
 	"github.com/pkg/errors"
 )
-
-const blockExpiry = 10
 
 func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 	/* new index pointer */ int64,
@@ -21,7 +19,7 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 	// set starntHeight and endHeight for batch sync
 	// NOTE: end height will use latest height - 10 for block expiry height
 	startHeight := (lastIndexPoint + 1)
-	endHeight := (idx.Lh.LatestHeight - blockExpiry)
+	endHeight := idx.Lh.LatestHeight
 	if startHeight > endHeight {
 		idx.Debugf("no need to sync from %d height to %d height, so it'll skip the logic", startHeight, endHeight)
 		return lastIndexPoint, nil
@@ -30,7 +28,7 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 	// set limit at end-height in this batch sync logic
 	if (endHeight - startHeight) > indexertypes.BatchSyncLimit {
 		endHeight = startHeight + indexertypes.BatchSyncLimit
-		idx.Infof("by batch sync limit, end height will change to %d", endHeight)
+		idx.Debugf("by batch sync limit, end height will change to %d", endHeight)
 	}
 
 	// get contract info
@@ -87,8 +85,6 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 				return
 			}
 
-			// idx.Debugf("got poll votes: %d in %d", len(pollVotes), height)
-
 			polls := AmplifierPollStartFillter(txsEvents)
 			ch <- helper.Result{
 				Item: PollDataSummary{
@@ -98,6 +94,8 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 				},
 				Success: true,
 			}
+
+			idx.Debugf("got poll: %d and votes: %d in %d", len(polls), len(pollVotes), height)
 		}(ch)
 
 		time.Sleep(10 * time.Millisecond)
@@ -168,21 +166,14 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 		idx.Debugf("changed vim length: %d and VAM: %d", len(idx.Vim), len(idx.VAM))
 	}
 
-	// first key: contract address
-	// second key: verifier address
-	pollMap := make(PollMap)
+	initPollVoteList := make([]model.AxelarAmplifierVerifierVote, 0)
+	pollVoteList := make([]model.AxelarAmplifierVerifierVote, 0)
+	polls := make([]Poll, 0)
 	for h := startHeight; h <= endHeight; h++ {
-		idx.Debugf("there are %d polls in %d height", len(summary[h].polls), h)
 		for _, poll := range summary[h].polls {
-			// ✅ Ensure pollMap[contractAddress] exists before assigning a value
 			chainAndPollID := ConcatChainAndPollID(poll.SourceChain, poll.PollID)
-			if _, exists := pollMap[chainAndPollID]; !exists {
-				pollMap[chainAndPollID] = make(map[string]model.AxelarAmplifierVerifierVote)
-			}
-
-			idx.Debugf("%s poll start with %d verifiers", chainAndPollID, len(poll.Participants))
 			for _, verifier := range poll.Participants {
-				initVote := model.AxelarAmplifierVerifierVote{
+				initPollVoteList = append(initPollVoteList, model.AxelarAmplifierVerifierVote{
 					// ID: Autoincrement
 					ChainInfoID:     idx.ChainInfoID,
 					CreatedAt:       time.Now(),
@@ -191,56 +182,57 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 					PollVoteHeight:  0,
 					VerifierID:      idx.Vim[verifier],
 					Status:          model.PollStart,
-				}
-				pollMap[chainAndPollID][verifier] = initVote
-				idx.Debugf("[%s] was inited for %s", chainAndPollID, verifier)
+				})
 			}
+			idx.Debugf("%s was inited", chainAndPollID)
+
+			polls = append(polls, poll)
 		}
 
-		cnt := 0
 		for _, pv := range summary[h].pollVotes {
-		RetryAfterInitPoll:
 			contractInfo, exist := chainNameMap[pv.ContractAddress]
 			if !exist {
 				return lastIndexPoint, errors.Wrap(err, "unexpected poll voted was occured")
 			}
 
-			key := ConcatChainAndPollID(contractInfo.ChainName, pv.PollID)
-			// Ensure the outer map exists
-			if _, exists := pollMap[key]; !exists {
-				idx.Infof("Poll key %s not found, try to get init poll votes", key)
-				initVoteMap := idx.MustInitPoll(key, pv.ContractAddress, pv.PollID, int64(contractInfo.BlockExpiry))
-				idx.Infof("got %d init votes", len(initVoteMap))
-				pollMap[key] = initVoteMap
-				goto RetryAfterInitPoll
+			verifierID, exist := idx.Vim[pv.VerifierAddress]
+			if !exist {
+				return lastIndexPoint, errors.Wrap(err, "unexpected verifier address existed")
 			}
 
-			// Ensure the inner map contains the verifier
-			vote, exists := pollMap[key][pv.VerifierAddress]
-			if !exists {
-				idx.Errorf("Verifier %s not found under poll %s, skipping update.", pv.VerifierAddress, key)
-				continue
-			}
+			// NOTE: if height is already over block expiry, we need to change status from success to did not vote..
+			pollVoteList = append(pollVoteList, model.AxelarAmplifierVerifierVote{
+				// where
+				ChainInfoID:    idx.ChainInfoID,
+				ChainAndPollID: ConcatChainAndPollID(contractInfo.ChainName, pv.PollID),
+				VerifierID:     verifierID,
+				// set
+				Status:         model.StringToPollVote(pv.StatusStr),
+				PollVoteHeight: h,
+			})
 
-			// Update the status
-			vote.UpdateVote(pv.StatusStr, h)
-
-			// Store the updated item back in the map
-			pollMap[key][pv.VerifierAddress] = vote
-			cnt++
 		}
-
-		idx.Debugf("there are %d poll votes in %d height", cnt, h)
+		idx.Debugf("%d poll votes will be updated in %d height", len(summary[h].pollVotes), h)
 	}
 
-	pollVoteList := ConvertPollMapToList(pollMap)
-	idx.Infof("got total %d poll vote list from %d to %d", len(pollVoteList), startHeight, endHeight)
-	err = idx.InsertValidatorExtensionVoteList(idx.ChainInfoID, endHeight, pollVoteList)
+	// 1. insert init votes
+	if len(initPollVoteList) > 0 {
+		err = idx.InsertInitPollVoteList(idx.ChainInfoID, initPollVoteList)
+		if err != nil {
+			return lastIndexPoint, errors.Wrap(err, "failed to insert init vote list")
+		}
+	}
+
+	// 2. update poll votes
+	err = idx.UpdatePollVoteList(idx.ChainInfoID, endHeight, pollVoteList)
 	if err != nil {
-		return lastIndexPoint, errors.Wrap(err, "faeild to insert models")
+		return lastIndexPoint, errors.Wrap(err, "failed to insert update poll vote list")
 	}
 
-	idx.updatePrometheusMetrics(endHeight, pollMap)
+	// 3. update metrics
+	idx.updatePrometheusMetrics(endHeight, polls)
+	idx.updatePollVoteStatusMetric()
+
 	return endHeight, nil
 }
 
@@ -250,65 +242,65 @@ type PollDataSummary struct {
 	pollVotes []PollVote
 }
 
-func (idx *AxelarAmplifierVerifierIndexer) MustInitPoll(chainAndPollID, contractAddress, pollID string, blockExpiry int64) map[string]model.AxelarAmplifierVerifierVote {
-	expireHeight, participants, err := GetPollState(idx.CommonClient, contractAddress, pollID)
-	if err != nil {
-		return nil
-	}
+// func (idx *AxelarAmplifierVerifierIndexer) MustInitPoll(chainAndPollID, contractAddress, pollID string, blockExpiry int64) map[string]model.AxelarAmplifierVerifierVote {
+// 	expireHeight, participants, err := GetPollState(idx.CommonClient, contractAddress, pollID)
+// 	if err != nil {
+// 		return nil
+// 	}
 
-	isNewVerifier := false
-	newVerifierInfo := make([]indexermodel.VerifierInfo, 0)
-	for _, verifier := range participants {
-		_, exist := idx.Vim[verifier]
-		if !exist {
-			idx.Debugf("the %s isn't in current verifier info table, the address will be added into the meta table", verifier)
-			isNewVerifier = true
-			newVerifierInfo = append(newVerifierInfo, indexermodel.VerifierInfo{
-				ChainInfoID:     idx.ChainInfoID,
-				VerifierAddress: verifier,
-				Moniker:         verifier,
-			})
-		}
-	}
+// 	isNewVerifier := false
+// 	newVerifierInfo := make([]indexermodel.VerifierInfo, 0)
+// 	for _, verifier := range participants {
+// 		_, exist := idx.Vim[verifier]
+// 		if !exist {
+// 			idx.Debugf("the %s isn't in current verifier info table, the address will be added into the meta table", verifier)
+// 			isNewVerifier = true
+// 			newVerifierInfo = append(newVerifierInfo, indexermodel.VerifierInfo{
+// 				ChainInfoID:     idx.ChainInfoID,
+// 				VerifierAddress: verifier,
+// 				Moniker:         verifier,
+// 			})
+// 		}
+// 	}
 
-	if isNewVerifier {
-		idx.Debugf("insert new amplifier verifiers: %d", len(newVerifierInfo))
-		err := idx.InsertVerifierInfoList(newVerifierInfo)
-		if err != nil {
-			return nil
-		}
+// 	if isNewVerifier {
+// 		idx.Debugf("insert new amplifier verifiers: %d", len(newVerifierInfo))
+// 		err := idx.InsertVerifierInfoList(newVerifierInfo)
+// 		if err != nil {
+// 			return nil
+// 		}
 
-		err = idx.FetchValidatorInfoList()
-		if err != nil {
-			return nil
-		}
+// 		err = idx.FetchValidatorInfoList()
+// 		if err != nil {
+// 			return nil
+// 		}
 
-		verifierInfoList, err := idx.GetVerifierInfoListByChainInfoID(idx.ChainInfoID)
-		if err != nil {
-			return nil
-		}
+// 		verifierInfoList, err := idx.GetVerifierInfoListByChainInfoID(idx.ChainInfoID)
+// 		if err != nil {
+// 			return nil
+// 		}
 
-		for _, v := range verifierInfoList {
-			idx.Vim[v.VerifierAddress] = int64(v.ID)
-			idx.VAM[v.ID] = v.VerifierAddress
-		}
-	}
+// 		for _, v := range verifierInfoList {
+// 			idx.Vim[v.VerifierAddress] = int64(v.ID)
+// 			idx.VAM[v.ID] = v.VerifierAddress
+// 		}
+// 	}
 
-	initVoteMap := make(map[string]model.AxelarAmplifierVerifierVote, len(participants))
-	pollStartHeight := expireHeight - blockExpiry
-	for _, verifier := range participants {
-		initVote := model.AxelarAmplifierVerifierVote{
-			// ID: Autoincrement
-			ChainInfoID:     idx.ChainInfoID,
-			CreatedAt:       time.Now(),
-			ChainAndPollID:  chainAndPollID,
-			PollStartHeight: pollStartHeight,
-			PollVoteHeight:  0,
-			VerifierID:      idx.Vim[verifier],
-			Status:          model.PollStart,
-		}
-		initVoteMap[verifier] = initVote
-	}
+// 	initVoteMap := make(map[string]model.AxelarAmplifierVerifierVote, len(participants))
+// 	pollStartHeight := expireHeight - blockExpiry
+// 	for _, verifier := range participants {
+// 		initVote := model.AxelarAmplifierVerifierVote{
+// 			// ID: Autoincrement
+// 			ChainInfoID:     idx.ChainInfoID,
+// 			CreatedAt:       time.Now(),
+// 			ChainAndPollID:  chainAndPollID,
+// 			PollStartHeight: pollStartHeight,
+// 			PollVoteHeight:  0,
+// 			VerifierID:      idx.Vim[verifier],
+// 			Status:          model.PollStart,
+// 		}
+// 		initVoteMap[verifier] = initVote
+// 	}
 
-	return initVoteMap
-}
+// 	return initVoteMap
+// }

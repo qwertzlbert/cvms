@@ -19,7 +19,7 @@ func (vidx *VoteIndexer) batchSync(lastIndexPointerHeight, newIndexPointerHeight
 	/* error */ error,
 ) {
 	if lastIndexPointerHeight >= vidx.Lh.LatestHeight {
-		vidx.Infof("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, vidx.Lh.LatestHeight)
+		vidx.Debugf("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, vidx.Lh.LatestHeight)
 		return lastIndexPointerHeight, nil
 	}
 

@@ -16,9 +16,8 @@ type AxelarAmplifierVerifierVote struct {
 	ChainAndPollID  string             `bun:"chain_and_poll_id"`
 	PollStartHeight int64              `bun:"poll_start_height"`
 	PollVoteHeight  int64              `bun:"poll_vote_height"`
-	VerifierID      int64              `bun:"verifier_id,notnull"`
-	Status          VerifierVoteStatus `bun:"status,notnull"`
-	// Meta              string             `bun:"meta"`
+	VerifierID      int64              `bun:"verifier_id"`
+	Status          VerifierVoteStatus `bun:"status"`
 }
 
 func (model *AxelarAmplifierVerifierVote) UpdateVote(statusStr string, voteHeight int64) {
@@ -69,4 +68,12 @@ func (v VerifierVoteStatus) ToString() string {
 		return "succeeded_on_chain"
 	}
 	return "did_not_vote"
+}
+
+type RecentVote struct {
+	Moniker          string `bun:"moniker"`
+	DidNotVote       int64  `bun:"did_not_vote"`
+	FailedOnChain    int64  `bun:"failed_on_chain"`
+	NotFound         int64  `bun:"not_found"`
+	SucceededOnChain int64  `bun:"succeeded_on_chain"`
 }

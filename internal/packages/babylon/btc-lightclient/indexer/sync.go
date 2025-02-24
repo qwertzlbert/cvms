@@ -18,7 +18,7 @@ func (idx *BTCLightClientIndexer) batchSync(lastIndexPoint int64) (
 	/* error */ error,
 ) {
 	if lastIndexPoint >= idx.Lh.LatestHeight {
-		idx.Infof("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPoint, idx.Lh.LatestHeight)
+		idx.Debugf("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPoint, idx.Lh.LatestHeight)
 		return lastIndexPoint, nil
 	}
 

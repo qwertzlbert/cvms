@@ -11,7 +11,7 @@ import (
 
 	"github.com/cosmostation/cvms/internal/common"
 	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
-	"github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/repository"
+	"github.com/cosmostation/cvms/internal/packages/axelar/amplifier-verifier/repository"
 )
 
 var (
@@ -27,7 +27,7 @@ type AxelarAmplifierVerifierIndexer struct {
 func NewAxelarAmplifierVerifierIndexer(p common.Packager) (*AxelarAmplifierVerifierIndexer, error) {
 	status := helper.GetOnChainStatus(p.RPCs, p.ProtocolType)
 	if status.ChainID == "" {
-		return nil, errors.New("failed to create new veindexer")
+		return nil, errors.Errorf("failed to create new %s", subsystem)
 	}
 	indexer := common.NewIndexer(p, p.Package, status.ChainID)
 	repo := repository.NewRepository(*p.IndexerDB, subsystem, indexertypes.SQLQueryMaxDuration)
@@ -62,7 +62,7 @@ func (idx *AxelarAmplifierVerifierIndexer) Start() error {
 		return errors.Wrap(err, "failed to fetch validator_info list")
 	}
 
-	idx.Infof("loaded index pointer: %d, loaded vim length: %d VAM: %d", initIndexPointer.Pointer, len(idx.Vim), len(idx.VAM))
+	idx.Infof("loaded index pointer: %d, loaded VIM length: %d VAM: %d", initIndexPointer.Pointer, len(idx.Vim), len(idx.VAM))
 
 	// init indexer metrics
 	idx.initLabelsAndMetrics()
@@ -129,15 +129,13 @@ func (idx *AxelarAmplifierVerifierIndexer) Loop(indexPoint int64) {
 		common.Ops.With(idx.RootLabels).Inc()
 
 		// logging & sleep
-		if idx.Lh.LatestHeight > indexPoint {
+		if (idx.Lh.LatestHeight) > indexPoint {
 			// when node catching_up is true, sleep 100 milli sec
-			idx.WithField("catching_up", true).
-				Infof("updated index pointer is %d ... remaining %d blocks", indexPoint, (idx.Lh.LatestHeight - indexPoint))
+			idx.Infof("updated index pointer is %d ... remaining %d blocks", indexPoint, (idx.Lh.LatestHeight - indexPoint))
 			time.Sleep(indexertypes.CatchingUpSleepDuration)
 		} else {
 			// when node already catched up, sleep 5 sec
-			idx.WithField("catching_up", false).
-				Infof("updated index pointer to %d and sleep %s sec...", indexPoint, indexertypes.DefaultSleepDuration.String())
+			idx.Infof("updated index pointer to %d and sleep %s sec...", indexPoint, indexertypes.DefaultSleepDuration.String())
 			time.Sleep(indexertypes.DefaultSleepDuration)
 		}
 	}

@@ -1,14 +1,17 @@
 package indexer
 
 import (
+	"strings"
+
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/api"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
-	PollMetricName = "poll"
-	PollLabel      = "poll_id"
+	PollMetricName   = "poll"
+	PollLabel        = "poll_id"
+	SourceChainLabel = "source_chain"
 
 	PollVoteMetricName = "poll_vote"
 	VoteStatusLabel    = "status"
@@ -48,37 +51,30 @@ func (idx *AxelarAmplifierVerifierIndexer) initLabelsAndMetrics() {
 			ConstLabels: idx.PackageLabels},
 		[]string{
 			PollLabel,
+			SourceChainLabel,
 		})
 
-	idx.MetricsCountVecMap[PollVoteMetricName] = idx.Factory.NewCounterVec(
-		prometheus.CounterOpts{
+	idx.MetricsVecMap[PollVoteMetricName] = idx.Factory.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace:   common.Namespace,
 			Subsystem:   subsystem,
 			Name:        PollVoteMetricName,
 			ConstLabels: idx.PackageLabels},
 		[]string{
-			PollLabel,
 			VoteStatusLabel,
 			VerifierLabel,
 		})
 }
 
-func (idx *AxelarAmplifierVerifierIndexer) updatePrometheusMetrics(indexPointer int64, pollMap PollMap) {
-	for poll, votes := range pollMap {
-		idx.MetricsCountVecMap[PollMetricName].With(prometheus.Labels{PollLabel: poll}).Inc()
-		for _, v := range votes {
-			_, exist := idx.VAM[v.VerifierID]
-			if !exist {
-				idx.Panicln(idx.VAM, v.VerifierID)
-			}
-			idx.MetricsCountVecMap[PollVoteMetricName].
-				With(prometheus.Labels{
-					PollLabel:       poll,
-					VoteStatusLabel: v.Status.ToString(),
-					VerifierLabel:   idx.VAM[v.VerifierID],
-				}).
-				Inc()
-		}
+func (idx *AxelarAmplifierVerifierIndexer) updatePrometheusMetrics(indexPointer int64, polls []Poll) {
+	idx.MetricsCountVecMap[PollMetricName].Reset()
+	for _, poll := range polls {
+		idx.MetricsCountVecMap[PollMetricName].
+			With(prometheus.Labels{
+				PollLabel:        strings.ReplaceAll(poll.PollID, `"`, ``),
+				SourceChainLabel: poll.SourceChain,
+			}).
+			Inc()
 	}
 	idx.MetricsMap[common.IndexPointerBlockHeightMetricName].Set(float64(indexPointer))
 	_, timestamp, _, _, _, _, err := api.GetBlock(idx.CommonClient, indexPointer)
@@ -88,4 +84,41 @@ func (idx *AxelarAmplifierVerifierIndexer) updatePrometheusMetrics(indexPointer 
 	}
 	idx.MetricsMap[common.IndexPointerBlockTimestampMetricName].Set((float64(timestamp.Unix())))
 	idx.Debugf("update prometheus metrics %d height", indexPointer)
+}
+
+func (idx *AxelarAmplifierVerifierIndexer) updatePollVoteStatusMetric() {
+	pollVoteList, err := idx.SelectPollVoteStatus(idx.ChainID)
+	if err != nil {
+		idx.Errorf("failed to select poll vote status: %s", err)
+	}
+
+	for _, pv := range pollVoteList {
+		idx.MetricsVecMap[PollVoteMetricName].
+			With(prometheus.Labels{
+				VoteStatusLabel: "DidNotVote",
+				VerifierLabel:   pv.Moniker,
+			}).
+			Set(float64(pv.DidNotVote))
+
+		idx.MetricsVecMap[PollVoteMetricName].
+			With(prometheus.Labels{
+				VoteStatusLabel: "FailedOnChain",
+				VerifierLabel:   pv.Moniker,
+			}).
+			Set(float64(pv.FailedOnChain))
+
+		idx.MetricsVecMap[PollVoteMetricName].
+			With(prometheus.Labels{
+				VoteStatusLabel: "NotFound",
+				VerifierLabel:   pv.Moniker,
+			}).
+			Set(float64(pv.NotFound))
+
+		idx.MetricsVecMap[PollVoteMetricName].
+			With(prometheus.Labels{
+				VoteStatusLabel: "SucceededOnChain",
+				VerifierLabel:   pv.Moniker,
+			}).
+			Set(float64(pv.SucceededOnChain))
+	}
 }

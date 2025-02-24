@@ -25,7 +25,7 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 	/* error */ error,
 ) {
 	if lastIndexPointerHeight >= idx.Lh.LatestHeight {
-		idx.Infof("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, idx.Lh.LatestHeight)
+		idx.Debugf("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, idx.Lh.LatestHeight)
 		return lastIndexPointerHeight, nil
 	}
 

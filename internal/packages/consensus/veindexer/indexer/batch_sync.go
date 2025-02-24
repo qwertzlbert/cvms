@@ -24,7 +24,7 @@ func (veidx *VEIndexer) batchSync(lastIndexPointerHeight, newIndexPointerHeight 
 	/* error */ error,
 ) {
 	if lastIndexPointerHeight >= veidx.Lh.LatestHeight {
-		veidx.Infof("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, veidx.Lh.LatestHeight)
+		veidx.Debugf("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, veidx.Lh.LatestHeight)
 		return lastIndexPointerHeight, nil
 	}
 

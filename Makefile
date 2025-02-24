@@ -84,7 +84,7 @@ start-exporter:
 ## start indexer application in debug mode
 start-indexer:
 	@echo "-> Start CVMS Indexer"
-	@go run ./cmd/cvms start indexer --config ${CONFIG_PATH} --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --indexer-port ${INDEXER_PORT}
+	@go run ./cmd/cvms start indexer --config ${CONFIG_PATH} --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --port 9300
 
 ## start exporter application for specific package 
 

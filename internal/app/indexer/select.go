@@ -6,7 +6,7 @@ import (
 	"github.com/cosmostation/cvms/internal/helper/config"
 
 	// axelar specific
-	aavindexer "github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/indexer"
+	aavindexer "github.com/cosmostation/cvms/internal/packages/axelar/amplifier-verifier/indexer"
 
 	// babylon specfic
 	btclcindexer "github.com/cosmostation/cvms/internal/packages/babylon/btc-lightclient/indexer"

@@ -7,8 +7,10 @@ import (
 
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/api"
+	indexermodel "github.com/cosmostation/cvms/internal/common/indexer/model"
 	"github.com/cosmostation/cvms/internal/helper/logger"
-	"github.com/cosmostation/cvms/internal/packages/axelar-amplifier-verifier/model"
+	"github.com/cosmostation/cvms/internal/packages/axelar/amplifier-verifier/model"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +31,7 @@ var (
 		ChainID:      "axelar-dojo-1",
 		ProtocolType: "cosmos",
 		Endpoints: common.Endpoints{
-			RPCs: []string{"https://rpc-axelar.cosmostation.io"},
+			RPCs: []string{"https://g.w.lavanet.xyz/gateway/axelar/rpc-http/3dc655f970c930f1d3e78ee71beece18"},
 			APIs: []string{"https://g.w.lavanet.xyz/gateway/axelar/rest/3dc655f970c930f1d3e78ee71beece18"},
 			// APIs: []string{"https://axelar-rest.publicnode.com"},
 		},
@@ -193,11 +195,11 @@ func Test_0_MakeLogic(t *testing.T) {
 func Test_2_BatchSync(t *testing.T) {
 	tempDBName := "temp"
 	indexerDB, err := common.NewTestLoaclIndexerDB(tempDBName)
-	p.SetIndexerDB(indexerDB)
-	p.IsConsumerChain = false
+	m.SetIndexerDB(indexerDB)
+	m.IsConsumerChain = false
 	assert.NoError(t, err)
 
-	idx, err := NewAxelarAmplifierVerifierIndexer(p)
+	idx, err := NewAxelarAmplifierVerifierIndexer(m)
 	assert.NoError(t, err)
 
 	err = idx.InitChainInfoID()
@@ -212,9 +214,22 @@ func Test_2_BatchSync(t *testing.T) {
 	err = idx.FetchValidatorInfoList()
 	assert.NoError(t, err)
 
-	newIndexPointer, err := idx.batchSync(17293862)
+	idx.initLabelsAndMetrics()
+
+	newIndexPointer, err := idx.batchSync(16823374)
 	assert.NoError(t, err)
 	t.Logf("new index point: %d", newIndexPointer)
+
+	voteList, err := idx.SelectVerifierVoteList("sui/8")
+	assert.NoError(t, err)
+
+	myVerifierID := idx.Vim["axelar16g3c4z0dx3qcplhqfln92p20mkqdj9cr0wyrsh"]
+
+	for _, v := range voteList {
+		if v.VerifierID == myVerifierID {
+			t.Logf("%v", v)
+		}
+	}
 }
 
 func Test_2_BatchSync_Mainnet(t *testing.T) {
@@ -236,36 +251,12 @@ func Test_2_BatchSync_Mainnet(t *testing.T) {
 	err = idx.CreateVerifierInfoPartitionTableByChainID(idx.ChainID)
 	assert.NoError(t, err)
 
-	err = idx.FetchValidatorInfoList()
-	assert.NoError(t, err)
-
-	newIndexPointer, err := idx.batchSync(16702029)
-	assert.NoError(t, err)
-	t.Logf("new index point: %d", newIndexPointer)
-}
-
-func Test_2_BatchSync_Mainnet2(t *testing.T) {
-	tempDBName := "temp"
-	indexerDB, err := common.NewTestLoaclIndexerDB(tempDBName)
-	m.SetIndexerDB(indexerDB)
-	m.IsConsumerChain = false
-	assert.NoError(t, err)
-
-	idx, err := NewAxelarAmplifierVerifierIndexer(m)
-	assert.NoError(t, err)
-
-	err = idx.InitChainInfoID()
-	assert.NoError(t, err)
-
-	err = idx.InitPartitionTablesByChainInfoID(idx.IndexName, idx.ChainID, 1)
-	assert.NoError(t, err)
-
-	err = idx.CreateVerifierInfoPartitionTableByChainID(idx.ChainID)
-	assert.NoError(t, err)
+	idx.initLabelsAndMetrics()
 
 	err = idx.FetchValidatorInfoList()
+
 	assert.NoError(t, err)
-	newIndexPointer, err := idx.batchSync(16702030)
+	newIndexPointer, err := idx.batchSync(16710630) // 16702030
 	assert.NoError(t, err)
 	t.Logf("new index point: %d", newIndexPointer)
 }
@@ -308,4 +299,155 @@ func Test_0_GetContractInfo(t *testing.T) {
 	data, err := GetVerifierContractAddressMap(app.CommonClient, true)
 	assert.NoError(t, err)
 	t.Log(data)
+}
+
+func Test_InsertInitPollVotelist(t *testing.T) {
+	tempDBName := "temp"
+	indexerDB, err := common.NewTestLoaclIndexerDB(tempDBName)
+	m.SetIndexerDB(indexerDB)
+	m.IsConsumerChain = false
+	assert.NoError(t, err)
+
+	idx, err := NewAxelarAmplifierVerifierIndexer(m)
+	assert.NoError(t, err)
+
+	err = idx.InitChainInfoID()
+	assert.NoError(t, err)
+
+	err = idx.InitPartitionTablesByChainInfoID(idx.IndexName, idx.ChainID, 1)
+	assert.NoError(t, err)
+
+	err = idx.CreateVerifierInfoPartitionTableByChainID(idx.ChainID)
+	assert.NoError(t, err)
+
+	idx.initLabelsAndMetrics()
+	assert.NoError(t, err)
+
+	err = idx.FetchValidatorInfoList()
+	assert.NoError(t, err)
+
+	verifierInfo := []indexermodel.VerifierInfo{
+		{
+			ChainInfoID:     idx.ChainInfoID,
+			VerifierAddress: "axelar1afj2uhx69pjclgcspfufj9dq9x87zfv0avf6we",
+			Moniker:         "axelar1afj2uhx69pjclgcspfufj9dq9x87zfv0avf6we",
+		},
+		{
+			ChainInfoID:     idx.ChainInfoID,
+			VerifierAddress: "axelar1ha0xrd2ex6p4zj0962tc3dx4cm0e3m5qmuq20h",
+			Moniker:         "axelar1ha0xrd2ex6p4zj0962tc3dx4cm0e3m5qmuq20h",
+		},
+	}
+
+	err = idx.InsertVerifierInfoList(verifierInfo)
+	assert.NoError(t, err)
+
+	modelList := []model.AxelarAmplifierVerifierVote{
+		{
+			// ID: Autoincrement
+			ChainInfoID:     1,
+			CreatedAt:       time.Now(),
+			ChainAndPollID:  "sui/8",
+			PollStartHeight: 123456,
+			PollVoteHeight:  0,
+			VerifierID:      int64(1),
+			Status:          model.PollStart,
+		}}
+
+	err = idx.InsertInitPollVoteList(idx.ChainInfoID, modelList)
+	assert.NoError(t, err)
+
+	modelList2 := make([]model.AxelarAmplifierVerifierVote, 0)
+	t.Log("chain info id", idx.ChainInfoID)
+	for idx := range verifierInfo {
+		modelList2 = append(modelList2, model.AxelarAmplifierVerifierVote{
+			// ID: Autoincrement
+			ChainInfoID:     1,
+			CreatedAt:       time.Now(),
+			ChainAndPollID:  "sui/8",
+			PollStartHeight: 123456,
+			PollVoteHeight:  0,
+			VerifierID:      int64(idx + 1),
+			Status:          model.PollStart,
+		})
+	}
+	err = idx.InsertInitPollVoteList(idx.ChainInfoID, modelList2)
+	assert.NoError(t, err)
+
+}
+
+func Test_UpdatePollVotelist(t *testing.T) {
+	tempDBName := "temp"
+	indexerDB, err := common.NewTestLoaclIndexerDB(tempDBName)
+	m.SetIndexerDB(indexerDB)
+	assert.NoError(t, err)
+	idx, err := NewAxelarAmplifierVerifierIndexer(m)
+	assert.NoError(t, err)
+	err = idx.InitChainInfoID()
+	assert.NoError(t, err)
+	err = idx.InitPartitionTablesByChainInfoID(idx.IndexName, idx.ChainID, 1)
+	assert.NoError(t, err)
+	err = idx.CreateVerifierInfoPartitionTableByChainID(idx.ChainID)
+	assert.NoError(t, err)
+	idx.initLabelsAndMetrics()
+	assert.NoError(t, err)
+	err = idx.FetchValidatorInfoList()
+	assert.NoError(t, err)
+
+	// insert verifiers
+	verifierInfo := []indexermodel.VerifierInfo{
+		{
+			ChainInfoID:     idx.ChainInfoID,
+			VerifierAddress: "axelar1afj2uhx69pjclgcspfufj9dq9x87zfv0avf6we",
+			Moniker:         "axelar1afj2uhx69pjclgcspfufj9dq9x87zfv0avf6we",
+		},
+		{
+			ChainInfoID:     idx.ChainInfoID,
+			VerifierAddress: "axelar1ha0xrd2ex6p4zj0962tc3dx4cm0e3m5qmuq20h",
+			Moniker:         "axelar1ha0xrd2ex6p4zj0962tc3dx4cm0e3m5qmuq20h",
+		},
+	}
+	err = idx.InsertVerifierInfoList(verifierInfo)
+	assert.NoError(t, err)
+
+	// insert init votes
+	initVoteList := make([]model.AxelarAmplifierVerifierVote, 0)
+	for idx := range verifierInfo {
+		initVoteList = append(initVoteList, model.AxelarAmplifierVerifierVote{
+			// ID: Autoincrement
+			ChainInfoID:     1,
+			CreatedAt:       time.Now(),
+			ChainAndPollID:  "sui/8",
+			PollStartHeight: 123456,
+			PollVoteHeight:  0,
+			VerifierID:      int64(idx + 1),
+			Status:          model.PollStart,
+		})
+	}
+	err = idx.InsertInitPollVoteList(idx.ChainInfoID, initVoteList)
+	assert.NoError(t, err)
+
+	// update poll votes
+	pollVoteList := []model.AxelarAmplifierVerifierVote{
+		{
+			// where
+			ChainInfoID:    idx.ChainInfoID,
+			ChainAndPollID: "sui/8",
+			VerifierID:     1,
+			// set
+			Status:         3,
+			PollVoteHeight: 123457,
+		},
+		{
+			// where
+			ChainInfoID:    idx.ChainInfoID,
+			ChainAndPollID: "sui/8",
+			VerifierID:     2,
+			// set
+			Status:         3,
+			PollVoteHeight: 123457,
+		},
+	}
+	err = idx.UpdatePollVoteList(idx.ChainInfoID, 123457, pollVoteList)
+	assert.NoError(t, err)
 }
