@@ -71,9 +71,17 @@ func (v VerifierVoteStatus) ToString() string {
 }
 
 type RecentVote struct {
-	Moniker          string `bun:"moniker"`
-	DidNotVote       int64  `bun:"did_not_vote"`
-	FailedOnChain    int64  `bun:"failed_on_chain"`
-	NotFound         int64  `bun:"not_found"`
-	SucceededOnChain int64  `bun:"succeeded_on_chain"`
+	Moniker string `bun:"moniker"`
+
+	DidNotVote      int64  `bun:"did_not_vote"`
+	DidNotVotePolls string `bun:"did_not_vote_polls"`
+
+	FailedOnChain      int64  `bun:"failed_on_chain"`
+	FailedOnChainPolls string `bun:"failed_on_chain_polls"`
+
+	NotFound      int64  `bun:"not_found"`
+	NotFoundPolls string `bun:"not_found_polls"`
+
+	SucceededOnChain      int64  `bun:"succeeded_on_chain"`
+	SucceededOnChainPolls string `bun:"succeeded_on_chain_polls"`
 }

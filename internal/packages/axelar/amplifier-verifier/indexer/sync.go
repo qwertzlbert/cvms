@@ -12,6 +12,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+type PollDataSummary struct {
+	height    int64
+	polls     []Poll
+	pollVotes []PollVote
+}
+
 func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 	/* new index pointer */ int64,
 	/* error */ error,
@@ -192,12 +198,15 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 		for _, pv := range summary[h].pollVotes {
 			contractInfo, exist := chainNameMap[pv.ContractAddress]
 			if !exist {
-				return lastIndexPoint, errors.Wrap(err, "unexpected poll voted was occured")
+				return lastIndexPoint, errors.New("unexpected poll voted was occured")
 			}
 
 			verifierID, exist := idx.Vim[pv.VerifierAddress]
 			if !exist {
-				return lastIndexPoint, errors.Wrap(err, "unexpected verifier address existed")
+				// NOTE: found poll wasn't initiated in the indexe db, in this case just pass this poll vote
+				// return lastIndexPoint, errors.New("unexpected verifier address existed")
+				idx.Warnf("the %s wasn't initiated in the index db, so it will skip the votes about poll", ConcatChainAndPollID(contractInfo.ChainName, pv.PollID))
+				continue
 			}
 
 			// NOTE: if height is already over block expiry, we need to change status from success to did not vote..
@@ -213,6 +222,29 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 
 		}
 		idx.Debugf("%d poll votes will be updated in %d height", len(summary[h].pollVotes), h)
+	}
+
+	// NOTE: if solo validator mode, we don't need to insert all validotors vote status.
+	// so, filter statues by moniker
+	if len(idx.Monikers) > 0 {
+		// if not init monikerIDMap
+		if len(idx.MonikerIDMap) != len(idx.Monikers) {
+			// init monikerIDMap
+			verifierInfoList, err := idx.GetVerifierInfoListByMonikers(idx.ChainInfoID, idx.Monikers)
+			if err != nil {
+				return lastIndexPoint, errors.Wrap(err, "failed to get validator_info list by monikers")
+			}
+			monikerIDMap := make(indexertypes.MonikerIDMap)
+			for _, vi := range verifierInfoList {
+				monikerIDMap[vi.ID] = true
+			}
+			// restore monikerIDMap in voteindexer struct, for reusing
+			idx.MonikerIDMap = monikerIDMap
+		}
+
+		// override for solo validator
+		initPollVoteList = filterVoteListByAddress(idx.MonikerIDMap, initPollVoteList)
+		pollVoteList = filterVoteListByAddress(idx.MonikerIDMap, pollVoteList)
 	}
 
 	// 1. insert init votes
@@ -233,13 +265,21 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 	idx.updatePrometheusMetrics(endHeight, polls)
 	idx.updatePollVoteStatusMetric()
 
+	idx.Infof("found %d polls and %d votes from %d to %d", len(initPollVoteList), len(pollVoteList), startHeight, endHeight)
 	return endHeight, nil
 }
 
-type PollDataSummary struct {
-	height    int64
-	polls     []Poll
-	pollVotes []PollVote
+func filterVoteListByAddress(monikerIDMap indexertypes.MonikerIDMap, modelList []model.AxelarAmplifierVerifierVote) []model.AxelarAmplifierVerifierVote {
+	// already inited monikerIDMap just filter validator vote by moniker id maps
+	newList := make([]model.AxelarAmplifierVerifierVote, 0)
+	for _, model := range modelList {
+		// // only append validaor vote in package monikers
+		_, exist := monikerIDMap[model.VerifierID]
+		if exist {
+			newList = append(newList, model)
+		}
+	}
+	return newList
 }
 
 // func (idx *AxelarAmplifierVerifierIndexer) MustInitPoll(chainAndPollID, contractAddress, pollID string, blockExpiry int64) map[string]model.AxelarAmplifierVerifierVote {

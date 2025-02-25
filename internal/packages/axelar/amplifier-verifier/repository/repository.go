@@ -165,6 +165,18 @@ func (repo *AmplifierIndexerRepository) DeleteOldValidatorExtensionVoteList(chai
 	return rowsAffected, nil
 }
 
+// vi.moniker,
+// COUNT(CASE WHEN status = 0 THEN 1 END) as "did_not_vote",
+// STRING_AGG(CASE WHEN status = 0 THEN chain_and_poll_id END, ', ') AS "did_not_vote_polls",
+
+// COUNT(CASE WHEN status = 1 THEN 1 END) as "failed_on_chain",
+// STRING_AGG(CASE WHEN status = 1 THEN chain_and_poll_id END, ', ') AS "failed_on_chain_polls",
+
+// COUNT(CASE WHEN status = 2 THEN 1 END) as "not_found",
+// STRING_AGG(CASE WHEN status = 2 THEN chain_and_poll_id END, ', ') AS "not_found_polls",
+
+// COUNT(CASE WHEN status = 3 THEN 1 END) as "succeeded_on_chain",
+// STRING_AGG(CASE WHEN status = 3 THEN chain_and_poll_id END, ', ') AS "succeeded_on_chain_polls"
 func (repo *AmplifierIndexerRepository) SelectPollVoteStatus(chainID string) ([]model.RecentVote, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), repo.sqlTimeout)
 	defer cancel()

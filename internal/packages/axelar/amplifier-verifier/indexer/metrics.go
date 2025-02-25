@@ -67,7 +67,6 @@ func (idx *AxelarAmplifierVerifierIndexer) initLabelsAndMetrics() {
 }
 
 func (idx *AxelarAmplifierVerifierIndexer) updatePrometheusMetrics(indexPointer int64, polls []Poll) {
-	idx.MetricsCountVecMap[PollMetricName].Reset()
 	for _, poll := range polls {
 		idx.MetricsCountVecMap[PollMetricName].
 			With(prometheus.Labels{
