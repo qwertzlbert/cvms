@@ -12,7 +12,7 @@ groups:
   - name: AxelarAmplifierVerifierPackage
     rules:
       - alert: AmplifierVerifierFailedVoting
-        expr: changes(cvms_axelar_amplifier_verifier_poll_vote{status!~'SucceededOnChain'}[5m]) > 0
+        expr: cvms_axelar_amplifier_verifier_poll_vote{chain_id='axelar-dojo-1',status!~"SucceededOnChain"} - (cvms_axelar_amplifier_verifier_poll_vote offset 10m) > 0
         labels:
           severity: warning
         annotations:
