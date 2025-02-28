@@ -261,7 +261,7 @@ func (veidx *VEIndexer) batchSync(lastIndexPointerHeight, newIndexPointerHeight 
 	}
 
 	// update metrics
-	veidx.updatePrometheusMetrics(blockSummaryList[endHeight].BlockHeight, blockSummaryList[endHeight].BlockTimeStamp)
+	veidx.updateRootMetrics(blockSummaryList[endHeight].BlockHeight, blockSummaryList[endHeight].BlockTimeStamp)
 	return blockSummaryList[endHeight].BlockHeight, nil
 }
 

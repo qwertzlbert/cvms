@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	Subsystem      = "finality_provider"
+	Subsystem      = "babylon_finality_provider"
 	SubsystemSleep = 10 * time.Second
 	UnHealthSleep  = 10 * time.Second
 
@@ -39,6 +39,7 @@ func Start(p common.Packager) error {
 		exporter.SetAPIEndPoint(api)
 		break
 	}
+	exporter.Debugf("current mode: %v", p.Mode)
 	go loop(exporter, p)
 	return nil
 }
@@ -113,6 +114,8 @@ func loop(exporter *common.Exporter, p common.Packager) {
 			continue
 		}
 
+		exporter.Debugf("got total %d status", len(status.FinalityProvidersStatus))
+
 		if p.Mode == common.NETWORK {
 			// update metrics by each validators
 			for _, item := range status.FinalityProvidersStatus {
@@ -127,9 +130,8 @@ func loop(exporter *common.Exporter, p common.Packager) {
 					Set(float64(item.MissedBlockCounter))
 			}
 		} else {
-			// update metrics by each validators
 			for _, item := range status.FinalityProvidersStatus {
-				if ok := helper.Contains(p.Monikers, item.Moniker); ok {
+				if ok := helper.Contains(exporter.Monikers, item.Moniker); ok {
 					uptimeMetric.
 						With(prometheus.Labels{
 							common.MonikerLabel:             item.Moniker,

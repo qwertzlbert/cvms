@@ -73,7 +73,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		}
 
 		if newIndexerPointerEpoch > epoch {
-			idx.Debugf("skip %d epoch. the epoch was already stored in the DB", epoch)
+			// idx.Debugf("skip %d epoch. the epoch was already stored in the DB", epoch)
 			continue
 		}
 
@@ -88,7 +88,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 			return lastIndexPointerEpoch, errors.Wrap(err, "failed to get epoch data")
 		}
 
-		prevBlockHeight, _, preBlockProposerAddress, _, _, _, err := api.GetBlock(idx.CommonClient, firstBlockHeightInEpoch-1)
+		prevBlockHeight, preBlockTimestamp, preBlockProposerAddress, _, _, _, err := api.GetBlock(idx.CommonClient, firstBlockHeightInEpoch-1)
 		if err != nil {
 			idx.Errorf("failed to call at %d height data, %s", prevBlockHeight, err)
 			return lastIndexPointerEpoch, err
@@ -101,7 +101,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 			return lastIndexPointerEpoch, err
 		}
 
-		blockSummary := types.BlockSummary{BlockProposerAddress: preBlockProposerAddress, CosmosValidators: validators}
+		blockSummary := types.BlockSummary{BlockProposerAddress: preBlockProposerAddress, CosmosValidators: validators, BlockTimeStamp: preBlockTimestamp}
 
 		// update validator address
 		{
@@ -218,7 +218,8 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		}
 
 		// update epoch & metrics
-		idx.updatePrometheusMetrics(epoch, blockSummary.BlockTimeStamp)
+		idx.updateRootMetrics(epoch, blockSummary.BlockTimeStamp)
+		idx.updateIndexerMetrics()
 		idx.Debugf("updated babylon checkpoint BLS singings in %d epoch ", epoch)
 		return epoch, nil
 	}
@@ -273,11 +274,11 @@ func makeBabylonExtensionVote(
 func filterValidatorVoteListByMonikers(monikerIDMap indexertypes.MonikerIDMap, bevList []model.BabylonVoteExtension) []model.BabylonVoteExtension {
 	// already inited monikerIDMap just filter validator vote by moniker id maps
 	newValidatorVoteList := make([]model.BabylonVoteExtension, 0)
-	for _, vv := range bevList {
+	for _, v := range bevList {
 		// // only append validaor vote in package monikers
-		_, exist := monikerIDMap[vv.ValidatorHexAddressID]
+		_, exist := monikerIDMap[v.ValidatorHexAddressID]
 		if exist {
-			newValidatorVoteList = append(newValidatorVoteList, vv)
+			newValidatorVoteList = append(newValidatorVoteList, v)
 		}
 	}
 	return newValidatorVoteList

@@ -247,7 +247,7 @@ func (vidx *VoteIndexer) batchSync(lastIndexPointerHeight, newIndexPointerHeight
 	}
 
 	// update metrics
-	vidx.updatePrometheusMetrics(blockSummaryList[endHeight].BlockHeight, blockSummaryList[endHeight].BlockTimeStamp)
+	vidx.updateRootMetrics(blockSummaryList[endHeight].BlockHeight, blockSummaryList[endHeight].BlockTimeStamp)
 	return blockSummaryList[endHeight].BlockHeight, nil
 }
 

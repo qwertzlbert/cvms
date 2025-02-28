@@ -10,6 +10,7 @@ type IMetaRepository interface {
 	IFinalityProviderInfoRepository
 	ICovenantCommitteeInfoRepository
 	IVerifierInfoRepository
+	IVigilanteInfoRepository
 
 	// common sql interface for partition tables
 	CreatePartitionTable(IndexName, chainID string) error
@@ -59,4 +60,12 @@ type IVerifierInfoRepository interface {
 	GetVerifierInfoListByChainInfoID(chainInfoID int64) (verifierInfoList []model.VerifierInfo, err error)
 	InsertVerifierInfoList(verifierInfoList []model.VerifierInfo) error
 	GetVerifierInfoListByMonikers(chainInfoID int64, monikers []string) ([]model.VerifierInfo, error)
+}
+
+// interface for about meta.verifier_info table
+type IVigilanteInfoRepository interface {
+	CreateVigilanteInfoPartitionTableByChainID(chainID string) error
+	GetVigilanteInfoListByChainInfoID(chainInfoID int64) (verifierInfoList []model.VigilanteInfo, err error)
+	InsertVigilanteInfoList(verifierInfoList []model.VigilanteInfo) error
+	GetVigilanteInfoListByMonikers(chainInfoID int64, monikers []string) ([]model.VigilanteInfo, error)
 }

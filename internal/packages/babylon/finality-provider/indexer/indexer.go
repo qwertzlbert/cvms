@@ -15,8 +15,6 @@ import (
 	"github.com/cosmostation/cvms/internal/packages/babylon/finality-provider/repository"
 )
 
-var subsystem = "babylon_finality_provider_vote"
-
 type FinalityProviderIndexer struct {
 	*common.Indexer
 	repo repository.FinalityProviderIndexerRepository
@@ -66,20 +64,10 @@ func (idx *FinalityProviderIndexer) Start() error {
 	idx.Infof("loaded index pointer(last saved height): %d", initIndexPointer.Pointer)
 	idx.Infof("initial vim length: %d for %s chain", len(idx.Vim), idx.ChainID)
 
-	// init indexer metrics
-	idx.initLabelsAndMetrics()
 	// go fetch new height in loop, it must be after init metrics
 	go idx.FetchLatestHeight()
 	// loop
 	go idx.Loop(initIndexPointer.Pointer)
-	// loop update recent miss counter metrics
-	// go func() {
-	// 	for {
-	// 		idx.Infoln("update recent miss counter metrics and sleep 5s sec...")
-	// 		idx.updateRecentMissCounterMetric()
-	// 		time.Sleep(time.Second * 5)
-	// 	}
-	// }()
 	// loop partion table time retention by env parameter
 	go func() {
 		if idx.RetentionPeriod == db.PersistenceMode {

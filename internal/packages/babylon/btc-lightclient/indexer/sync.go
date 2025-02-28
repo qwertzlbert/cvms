@@ -102,7 +102,7 @@ func (idx *BTCLightClientIndexer) batchSync(lastIndexPoint int64) (
 
 	// if there are new hex address in current block, collect their validator hex address to save in database
 	isNewReporter := false
-	newRepoterInfoList := make([]indexermodel.ValidatorInfo, 0)
+	newRepoterInfoList := make([]indexermodel.VigilanteInfo, 0)
 	for _, bie := range bieSummaryList {
 		if bie.skip {
 			continue
@@ -113,9 +113,8 @@ func (idx *BTCLightClientIndexer) batchSync(lastIndexPoint int64) (
 			_, exist := idx.Vim[e.ReporterAddress]
 			if !exist {
 				idx.Debugf("the reporter %s address isn't in current validator info table, the address will be added into the meta table", e.ReporterAddress)
-				newRepoterInfoList = append(newRepoterInfoList, indexermodel.ValidatorInfo{
+				newRepoterInfoList = append(newRepoterInfoList, indexermodel.VigilanteInfo{
 					ChainInfoID:     idx.ChainInfoID,
-					HexAddress:      e.ReporterAddress[:40],
 					OperatorAddress: e.ReporterAddress,
 					Moniker:         "Babylon Vigilante Repoter",
 				})
@@ -127,7 +126,7 @@ func (idx *BTCLightClientIndexer) batchSync(lastIndexPoint int64) (
 	// this logic will be progressed only when there are new tendermint validators in this block
 	if isNewReporter {
 		idx.Debugf("insert new vigilante reporters: %d", len(newRepoterInfoList))
-		err := idx.InsertValidatorInfoList(newRepoterInfoList)
+		err := idx.InsertVigilanteInfoList(newRepoterInfoList)
 		if err != nil {
 			// NOTE: fetch again validator_info list, actually already inserted the list by other indexer service
 			idx.FetchValidatorInfoList()
@@ -135,7 +134,7 @@ func (idx *BTCLightClientIndexer) batchSync(lastIndexPoint int64) (
 		}
 
 		// get already saved tendermint validator list for mapping validators ids
-		repoterInfoList, err := idx.GetValidatorInfoListByChainInfoID(idx.ChainInfoID)
+		repoterInfoList, err := idx.GetVigilanteInfoListByChainInfoID(idx.ChainInfoID)
 		if err != nil {
 			return lastIndexPoint, errors.Wrap(err, "failed to get new reporter info list after inserting new hex address list")
 
@@ -156,13 +155,35 @@ func (idx *BTCLightClientIndexer) batchSync(lastIndexPoint int64) (
 				return lastIndexPoint, errors.New("failed to find reporter ID in indexer ID maps")
 			}
 
+			lastBTCHeight := int64(0)
+			forwardCnt := int64(0)
+			backCnt := int64(0)
+			isRollBack := false
+			for _, header := range e.BTCHeaders {
+				if header.EventType == "EventBTCRollForward" {
+					forwardCnt++
+				} else {
+					backCnt++
+					isRollBack = true
+				}
+				if header.Height > lastBTCHeight {
+					lastBTCHeight = header.Height
+				}
+			}
+
 			modelList = append(modelList, model.BabylonBTCRoll{
-				ChainInfoID: idx.ChainInfoID,
-				Height:      bie.BlockHeight,
-				ReporterID:  reporterID,
-				HeaderCount: len(e.BTCHeaders),
-				BTCHeaders:  e.ToHeadersStringSlice(),
+				ChainInfoID:      idx.ChainInfoID,
+				Height:           bie.BlockHeight,
+				ReporterID:       reporterID,
+				RollForwardCount: forwardCnt,
+				RollBackCount:    backCnt,
+				BTCHeight:        lastBTCHeight,
+				IsRollBack:       isRollBack,
+				BTCHeaders:       e.ToHeadersStringSlice(),
 			})
+
+			// update indexer metrics
+			idx.updateIndexerMetrics(forwardCnt, backCnt, lastBTCHeight)
 		}
 	}
 
@@ -177,6 +198,6 @@ func (idx *BTCLightClientIndexer) batchSync(lastIndexPoint int64) (
 		return lastIndexPoint, errors.Wrapf(err, "failed to insert from %d to %d height", startHeight, endHeight)
 	}
 
-	idx.updatePrometheusMetrics(endHeight)
+	idx.updateRootMetrics(endHeight)
 	return endHeight, nil
 }

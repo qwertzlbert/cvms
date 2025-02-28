@@ -19,29 +19,6 @@ const (
 )
 
 func (idx *AxelarAmplifierVerifierIndexer) initLabelsAndMetrics() {
-	idx.MetricsMap[common.IndexPointerBlockHeightMetricName] = idx.Factory.NewGauge(prometheus.GaugeOpts{
-		Namespace:   common.Namespace,
-		Subsystem:   subsystem,
-		Name:        common.IndexPointerBlockHeightMetricName,
-		ConstLabels: idx.PackageLabels,
-	})
-
-	idx.MetricsMap[common.IndexPointerBlockTimestampMetricName] = idx.Factory.NewGauge(prometheus.GaugeOpts{
-		Namespace:   common.Namespace,
-		Subsystem:   subsystem,
-		Name:        common.IndexPointerBlockTimestampMetricName,
-		ConstLabels: idx.PackageLabels,
-	})
-
-	latestBlockHeightMetric := idx.Factory.NewGauge(prometheus.GaugeOpts{
-		Namespace:   common.Namespace,
-		Subsystem:   subsystem,
-		Name:        common.LatestBlockHeightMetricName,
-		ConstLabels: idx.PackageLabels,
-	})
-	latestBlockHeightMetric.Set(0)
-	idx.MetricsMap[common.LatestBlockHeightMetricName] = latestBlockHeightMetric
-
 	// only axelar amplifier verifier
 	idx.MetricsCountVecMap[PollMetricName] = idx.Factory.NewCounterVec(
 		prometheus.CounterOpts{
@@ -75,13 +52,13 @@ func (idx *AxelarAmplifierVerifierIndexer) updatePrometheusMetrics(indexPointer 
 			}).
 			Inc()
 	}
-	idx.MetricsMap[common.IndexPointerBlockHeightMetricName].Set(float64(indexPointer))
+	common.IndexPointer.With(idx.RootLabels).Set(float64(indexPointer))
 	_, timestamp, _, _, _, _, err := api.GetBlock(idx.CommonClient, indexPointer)
 	if err != nil {
 		idx.Errorf("failed to get block %d: %s", indexPointer, err)
 		return
 	}
-	idx.MetricsMap[common.IndexPointerBlockTimestampMetricName].Set((float64(timestamp.Unix())))
+	common.IndexPointerTimestamp.With(idx.RootLabels).Set((float64(timestamp.Unix())))
 	idx.Debugf("update prometheus metrics %d height", indexPointer)
 }
 
