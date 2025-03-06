@@ -27,11 +27,6 @@ version:
 	@echo "VERSION: ${VERSION}"
 	@echo "COMMIT: ${COMMIT}"	
 
-# Reset indexer db 
-reset-db:
-	@docker compose --profile indexer-db down -v
-	@docker compose --profile indexer-db up -d
-
 # Sort chain_id in support_chains.yaml
 sort_support_chains:
 	@yq eval 'sort_keys(.)' -i ./docker/cvms/support_chains.yaml
@@ -63,6 +58,14 @@ clean:
 
 PHONY: build install run clean
 
+###############################################################################
+###                                  Docker                                 ###
+###############################################################################
+
+## Reset indexer db 
+reset-db:
+	@echo "-> Re-up postgres container for reset"
+	@docker compose down -v postgres && docker compose up -d postgres
 
 ###############################################################################
 ###                                  Migration                              ###

@@ -32,7 +32,9 @@ func NewBTCLightClientIndexer(p common.Packager) (*BTCLightClientIndexer, error)
 	indexer := common.NewIndexer(p, p.Package, status.ChainID)
 	repo := repository.NewRepository(*p.IndexerDB, subsystem, indexertypes.SQLQueryMaxDuration)
 	indexer.Lh = indexertypes.LatestHeightCache{LatestHeight: status.BlockHeight}
-	return &BTCLightClientIndexer{indexer, repo, status.EarliestBlockHeight}, nil
+	idx := &BTCLightClientIndexer{indexer, repo, status.EarliestBlockHeight}
+	idx.initMetrics()
+	return idx, nil
 }
 
 // NOTE: Babylon operates a Bitcoin light client that stores Bitcoin chain headers.
@@ -50,10 +52,9 @@ func (idx *BTCLightClientIndexer) Start() error {
 		return errors.Wrap(err, "failed to check init tables")
 	}
 	if !alreadyInit {
-		idx.Warnf("it's not initialized in the database, so that this package will initalize at %d as a init index point", idx.Lh.LatestHeight)
-		// idx.InitPartitionTablesByChainInfoID(idx.IndexName, idx.ChainID, idx.Lh.LatestHeight)
+		idx.Infof("the package will initalize at %d as a init index point", idx.Lh.LatestHeight)
 		idx.InitPartitionTablesByChainInfoID(idx.IndexName, idx.ChainID, idx.earliestBlockHeight)
-		idx.CreateValidatorInfoPartitionTableByChainID(idx.ChainID)
+		idx.CreateVigilanteInfoPartitionTableByChainID(idx.ChainID)
 	}
 
 	// get last index pointer, index pointer is always initalize if not exist
@@ -68,21 +69,9 @@ func (idx *BTCLightClientIndexer) Start() error {
 	}
 
 	idx.Infof("loaded index pointer(last saved height): %d", initIndexPointer.Pointer)
-	idx.Infof("initial vim length: %d for %s chain", len(idx.Vim), idx.ChainID)
 
-	// init indexer metrics
-	idx.initLabelsAndMetrics()
-	// go idx.FetchLatestHeight()
+	go idx.FetchLatestHeight()
 	go idx.Loop(initIndexPointer.Pointer)
-	// loop update recent miss counter metrics
-	// go func() {
-	// 	for {
-	// 		idx.Infoln("update recent miss counter metrics and sleep 5s sec...")
-	// 		idx.updateRecentMissCounterMetric()
-	// 		time.Sleep(time.Second * 5)
-	// 	}
-	// }()
-	// loop partion table time retention by env parameter
 	go func() {
 		if idx.RetentionPeriod == db.PersistenceMode {
 			idx.Infoln("skipped the postgres time retention")
@@ -147,14 +136,11 @@ func (idx *BTCLightClientIndexer) Loop(indexPoint int64) {
 		// logging & sleep
 		if idx.Lh.LatestHeight > indexPoint {
 			// when node catching_up is true, sleep 100 milli sec
-			idx.WithField("catching_up", true).
-				Infof("latest height is %d but updated index pointer is %d ... remaining %d blocks", idx.Lh.LatestHeight, indexPoint, (idx.Lh.LatestHeight - indexPoint))
+			idx.Infof("updated index pointer is %d ... remaining %d blocks", indexPoint, (idx.Lh.LatestHeight - indexPoint))
 			time.Sleep(indexertypes.CatchingUpSleepDuration)
 		} else {
 			// when node already catched up, sleep 5 sec
-			idx.WithField("catching_up", false).
-				Infof("updated index pointer to %d and sleep %s sec...", indexPoint, indexertypes.DefaultSleepDuration.String())
-			time.Sleep(indexertypes.DefaultSleepDuration)
+			idx.Infof("updated index pointer to %d and sleep %s sec...", indexPoint, indexertypes.DefaultSleepDuration.String())
 		}
 	}
 }
@@ -186,16 +172,14 @@ func (idx *BTCLightClientIndexer) InitChainInfoID() error {
 
 func (idx *BTCLightClientIndexer) FetchValidatorInfoList() error {
 	// get already saved validator-set list for mapping validators ids
-	validatorInfoList, err := idx.GetValidatorInfoListByChainInfoID(idx.ChainInfoID)
+	vigilanteInfoList, err := idx.GetVigilanteInfoListByChainInfoID(idx.ChainInfoID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator info list")
 	}
 
 	// when the this pacakge starts, set validator-id map
-	for _, validator := range validatorInfoList {
-		if validator.Moniker == "Babylon Vigilante Reporter" {
-			idx.Vim[validator.OperatorAddress] = int64(validator.ID)
-		}
+	for _, validator := range vigilanteInfoList {
+		idx.Vim[validator.OperatorAddress] = int64(validator.ID)
 	}
 
 	return nil

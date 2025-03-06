@@ -740,6 +740,17 @@ lum-network-1:
     - upgrade
     - uptime
     - voteindexer
+lumera-testnet-1:
+  chain_name: lumera
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: ulume
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
 mantle-1:
   chain_name: asset-mantle
   protocol_type: cosmos

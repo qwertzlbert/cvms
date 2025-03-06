@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/api"
+	"github.com/cosmostation/cvms/internal/packages/babylon/btc-lightclient/model"
 
 	"github.com/cosmostation/cvms/internal/helper/logger"
 	"github.com/stretchr/testify/assert"
@@ -46,10 +47,40 @@ func Test_1_GetBTCLightClientData(t *testing.T) {
 		bieList, err := filterBTCLightClientEvents(txsEvents)
 		assert.NoError(t, err)
 
+		modelList := make([]model.BabylonBTCRoll, 0)
 		for _, bie := range bieList {
 			t.Logf("len header: %d", len(bie.BTCHeaders))
 			t.Logf("in %d height, got %s headers", h, bie.ToHeadersStringSlice())
+
+			lastBTCHeight := int64(0)
+			forwardCnt := int64(0)
+			backCnt := int64(0)
+			isRollBack := false
+			for _, header := range bie.BTCHeaders {
+				if header.EventType == "EventBTCRollForward" {
+					forwardCnt++
+				} else {
+					backCnt++
+					isRollBack = true
+				}
+				if header.Height > lastBTCHeight {
+					lastBTCHeight = header.Height
+				}
+			}
+
+			modelList = append(modelList, model.BabylonBTCRoll{
+				ChainInfoID:      1,
+				Height:           h,
+				ReporterID:       1,
+				RollForwardCount: forwardCnt,
+				RollBackCount:    backCnt,
+				BTCHeight:        lastBTCHeight,
+				IsRollBack:       isRollBack,
+				// BTCHeaders:       bie.ToHeadersStringSlice(),
+			})
 		}
+
+		t.Logf("%v", modelList)
 	}
 }
 

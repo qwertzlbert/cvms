@@ -25,7 +25,7 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 	/* error */ error,
 ) {
 	if lastIndexPointerHeight >= idx.Lh.LatestHeight {
-		idx.Infof("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, idx.Lh.LatestHeight)
+		idx.Debugf("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, idx.Lh.LatestHeight)
 		return lastIndexPointerHeight, nil
 	}
 
@@ -126,6 +126,11 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 						goto RETRY2
 					}
 					btcStakingTxHash, err := DecodeBTCStakingTxByHexStr(escapeHexStr)
+					if err != nil {
+						idx.Errorf("failed to decoding for staking tx, %s", err)
+						helper.ExponentialBackoff(&backoffTime)
+						goto RETRY2
+					}
 
 					btcDelegationEvents = append(btcDelegationEvents, EventBtcDelegationCreated{StakingTxHash: btcStakingTxHash})
 				}
@@ -224,7 +229,8 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 		return lastIndexPointerHeight, err
 	}
 
-	idx.updatePrometheusMetrics(covenantSignatureList, btcDelegationsList, endBlockTimestamp)
+	idx.updateRootMetrics(endHeight, endBlockTimestamp)
+	idx.updateIndexerMetrics(covenantSignatureList, btcDelegationsList)
 	idx.Debugf("updated babylon covenant signature in %v block", endBlockTimestamp)
 	return endHeight, nil
 }

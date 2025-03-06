@@ -27,7 +27,7 @@ type AxelarAmplifierVerifierIndexer struct {
 func NewAxelarAmplifierVerifierIndexer(p common.Packager) (*AxelarAmplifierVerifierIndexer, error) {
 	status := helper.GetOnChainStatus(p.RPCs, p.ProtocolType)
 	if status.ChainID == "" {
-		return nil, errors.New("failed to create new veindexer")
+		return nil, errors.Errorf("failed to create new %s", subsystem)
 	}
 	indexer := common.NewIndexer(p, p.Package, status.ChainID)
 	repo := repository.NewRepository(*p.IndexerDB, subsystem, indexertypes.SQLQueryMaxDuration)
@@ -129,7 +129,7 @@ func (idx *AxelarAmplifierVerifierIndexer) Loop(indexPoint int64) {
 		common.Ops.With(idx.RootLabels).Inc()
 
 		// logging & sleep
-		if (idx.Lh.LatestHeight - blockExpiry) > indexPoint {
+		if (idx.Lh.LatestHeight) > indexPoint {
 			// when node catching_up is true, sleep 100 milli sec
 			idx.Infof("updated index pointer is %d ... remaining %d blocks", indexPoint, (idx.Lh.LatestHeight - indexPoint))
 			time.Sleep(indexertypes.CatchingUpSleepDuration)
