@@ -184,6 +184,7 @@ bbn-test-5:
     - babylon-covenant-committee
     - babylon-finality-provider-indexer
     - babylon-finality-provider-uptime
+    - babylon-btc-delegations
 bitcanna-1:
   chain_name: bitcanna
   protocol_type: cosmos
