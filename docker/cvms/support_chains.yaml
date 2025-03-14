@@ -437,6 +437,18 @@ dymension_1100-1:
     - upgrade
     - uptime
     - voteindexer
+deluge-1:
+  chain_name: zkcloud
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: uproof
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer    
 evmos_9000-4:
   chain_name: evmos
   protocol_type: cosmos
@@ -1352,6 +1364,18 @@ xion-testnet-1:
     - upgrade
     - uptime
     - voteindexer
+xrplevm_1449000-1:
+  chain_name: xrpl-evm
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: axrp
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer    
 zetachain_7000-1:
   chain_name: zeta
   protocol_type: cosmos
