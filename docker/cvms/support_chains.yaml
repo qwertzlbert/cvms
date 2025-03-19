@@ -1243,6 +1243,18 @@ stride-1:
     - upgrade
     - uptime
     - voteindexer
+selfchain-testnet:
+  chain_name: selfchain
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: uslf
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 tabi_9788-2:
   chain_name: tabi
   protocol_type: cosmos
