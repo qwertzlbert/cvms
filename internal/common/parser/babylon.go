@@ -91,10 +91,7 @@ func ParserCovenantCommiteeParams(resp []byte) ([]string, error) {
 		return []string{}, errors.WithStack(err)
 	}
 
-	for _, member := range result.Params.CovenantPks {
-		newCovenantCommitee = append(newCovenantCommitee, member)
-	}
-
+	newCovenantCommitee = append(newCovenantCommitee, result.Params.CovenantPks...)
 	return newCovenantCommitee, nil
 }
 

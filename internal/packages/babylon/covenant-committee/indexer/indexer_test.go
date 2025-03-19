@@ -50,7 +50,7 @@ func TestLogic(t *testing.T) {
 	_, blockTimestamp, _, _, _, _, err := api.GetBlock(app.CommonClient, testHeight)
 	assert.NoError(t, err)
 
-	txsEvents, _, err := api.GetBlockResults(app.CommonClient, testHeight)
+	txsEvents, _, _, err := api.GetBlockResults(app.CommonClient, testHeight)
 	assert.NoError(t, err)
 
 	covenantSigEvents := make([]EventCovenantSignature, 0)

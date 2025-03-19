@@ -14,7 +14,7 @@ func TestCheckGetBlockResultAndExtractFpVoting(t *testing.T) {
 	commonApp := common.NewCommonApp(p)
 	commonApp.SetRPCEndPoint("https://rpc-office.cosmostation.io/babylon-testnet")
 
-	txsEvents, _, err := GetBlockResults(commonApp.CommonClient, 92664)
+	txsEvents, _, _, err := GetBlockResults(commonApp.CommonClient, 92664)
 	assert.NoError(t, err)
 
 	const msg = "/babylon.finality.v1.MsgAddFinalitySig"

@@ -132,3 +132,11 @@ func (ip IndexPointer) String() string {
 		ip.Pointer,
 	)
 }
+
+type MessageType struct {
+	bun.BaseModel `bun:"table:meta.message_type"`
+
+	ID          int64  `bun:"id,pk,autoincrement"`
+	ChainInfoID int64  `bun:"chain_info_id,pk,notnull"`
+	MessageType string `bun:"message_type,unique:uniq_message_type_by_chain"`
+}

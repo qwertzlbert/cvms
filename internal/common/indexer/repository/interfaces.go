@@ -11,10 +11,12 @@ type IMetaRepository interface {
 	ICovenantCommitteeInfoRepository
 	IVerifierInfoRepository
 	IVigilanteInfoRepository
+	IMessageTypeRepository
 
 	// common sql interface for partition tables
 	CreatePartitionTable(IndexName, chainID string) error
 	InitPartitionTablesByChainInfoID(IndexName, chainID string, latestHeight int64) error
+	CreatePartitionTableInMeta(tableName, chainID string) error
 }
 
 // interface for about meta.chain_info table
@@ -68,4 +70,9 @@ type IVigilanteInfoRepository interface {
 	GetVigilanteInfoListByChainInfoID(chainInfoID int64) (verifierInfoList []model.VigilanteInfo, err error)
 	InsertVigilanteInfoList(verifierInfoList []model.VigilanteInfo) error
 	GetVigilanteInfoListByMonikers(chainInfoID int64, monikers []string) ([]model.VigilanteInfo, error)
+}
+
+type IMessageTypeRepository interface {
+	GetMessageTypeListByChainInfoID(chainInfoID int64) (messageTypeList []model.MessageType, err error)
+	InsertMessageTypeList(messageTypeList []model.MessageType) error
 }

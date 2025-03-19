@@ -179,6 +179,7 @@ bbn-test-5:
     - upgrade
     - uptime
     - voteindexer
+    - block-data-analytics
     - babylon-checkpoint
     - babylon-btc-lightclient
     - babylon-covenant-committee
