@@ -1256,7 +1256,7 @@ stride-1:
     - upgrade
     - uptime
     - voteindexer
-exocoretestnet_233-6:
+imuachaintestnet_233-8:
   chain_name: imua
   protocol_type: cosmos
   mainnet: false
