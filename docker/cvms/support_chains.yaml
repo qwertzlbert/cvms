@@ -1266,8 +1266,8 @@ imuachaintestnet_233-8:
   packages:
     - block
     - upgrade
-    - uptime
-    - voteindexer  
+    # - uptime
+    # - voteindexer  
 selfchain-testnet:
   chain_name: selfchain
   protocol_type: cosmos
