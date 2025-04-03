@@ -40,6 +40,7 @@ allora-mainnet-1:
     - block
     - upgrade
     - uptime
+    - voteindexer
 allora-testnet-1:
   chain_name: allora
   protocol_type: cosmos
