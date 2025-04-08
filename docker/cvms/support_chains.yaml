@@ -932,7 +932,7 @@ nyx:
   protocol_type: cosmos
   mainnet: true
   support_asset:
-    denom: unyx
+    denom: unym
     decimal: 6
   packages:
     - block
