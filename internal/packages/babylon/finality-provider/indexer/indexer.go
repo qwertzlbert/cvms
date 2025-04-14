@@ -73,7 +73,7 @@ func (idx *FinalityProviderIndexer) Start() error {
 		return errors.Wrap(err, "failed to get babylon finality provider params to check activation height")
 	}
 
-	if activationHeight > idx.Lh.LatestHeight || activationHeight < initIndexPointer.Pointer {
+	if activationHeight > idx.Lh.LatestHeight || activationHeight > initIndexPointer.Pointer {
 		idx.Infof("activation height is %d, so that this package will sleep until the activation height", activationHeight)
 		err := idx.repo.UpdateIndexPointer(repository.IndexName, idx.ChainID, activationHeight)
 		if err != nil {
@@ -81,6 +81,8 @@ func (idx *FinalityProviderIndexer) Start() error {
 		}
 
 		idx.Infof("set activation height %d in the database", activationHeight)
+		initIndexPointer.Pointer = activationHeight
+		idx.Infof("updated index pointer: %d", initIndexPointer.Pointer)
 	}
 
 	// loop
