@@ -26,10 +26,11 @@ func (idx *CovenantSignatureIndexer) initLabelsAndMetrics() {
 	idx.MetricsCountVecMap[CovenantSigCountMetricName] = covenantSigMetric
 
 	findBtcDelegationMetric := idx.Factory.NewCounter(prometheus.CounterOpts{
-		Namespace: common.Namespace,
-		Subsystem: subsystem,
-		Name:      BtcDelegationCountTotalMetricName,
-		Help:      "The total number of BTC delegations found at the time the indexer started.",
+		Namespace:   common.Namespace,
+		Subsystem:   subsystem,
+		Name:        BtcDelegationCountTotalMetricName,
+		ConstLabels: idx.PackageLabels,
+		Help:        "The total number of BTC delegations found at the time the indexer started.",
 	})
 
 	idx.MetricsCountMap[BtcDelegationCountTotalMetricName] = findBtcDelegationMetric
