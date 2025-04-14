@@ -235,14 +235,8 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 		return lastIndexPointerHeight, errors.Wrap(err, "found an unknown Covenant Committee member. Processing with the update.")
 	}
 
-	// 1. Insert Babylon Btc Delegations Tx
-	err := idx.btcDelRepo.InsertBabylonBtcDelegationsList(idx.ChainInfoID, btcDelegationsList)
-	if err != nil {
-		return lastIndexPointerHeight, err
-	}
-
-	// 2. update sig status
-	err = idx.csRepo.InsertBabylonCovenantSignatureList(idx.ChainInfoID, endHeight, covenantSignatureList)
+	// insert committee sig status, btc delegation status
+	err := idx.csRepo.InsertBabylonCovenantSignatureList(idx.ChainInfoID, endHeight, covenantSignatureList, btcDelegationsList)
 	if err != nil {
 		return lastIndexPointerHeight, err
 	}
