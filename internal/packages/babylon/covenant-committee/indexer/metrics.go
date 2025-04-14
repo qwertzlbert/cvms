@@ -20,6 +20,7 @@ func (idx *CovenantSignatureIndexer) initLabelsAndMetrics() {
 		Subsystem:   subsystem,
 		Name:        CovenantSigCountMetricName,
 		ConstLabels: idx.PackageLabels,
+		Help:        "Count number of MsgAddCovenantSigs messages submitted by Covenant Committee member",
 	}, []string{
 		"btc_pk",
 	})
@@ -37,7 +38,7 @@ func (idx *CovenantSignatureIndexer) initLabelsAndMetrics() {
 }
 
 func (idx *CovenantSignatureIndexer) initMetricState(covenantCommitteeMap map[string]int64) {
-	for btcPk, _ := range covenantCommitteeMap {
+	for btcPk := range covenantCommitteeMap {
 		covenantSigMetric, ok := idx.MetricsCountVecMap[CovenantSigCountMetricName]
 		if ok {
 			covenantSigMetric.WithLabelValues(btcPk).Add(0)
