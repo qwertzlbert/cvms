@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/cosmostation/cvms/internal/app/exporter"
 	"github.com/spf13/pflag"
 )
 
@@ -34,7 +33,7 @@ func LogFlags() *pflag.FlagSet {
 	flag.String(
 		LogColorDisable,
 		"",
-		"The colored log option. default is false for production level if you want to see debug mode, recommand turn it on true",
+		"The colored log option. default is false for production level if you want to see debug mode, recommend turn it on true",
 	)
 	flag.String(
 		LogLevel,
@@ -60,8 +59,7 @@ func PortFlag() *pflag.FlagSet {
 func FilterFlag() *pflag.FlagSet {
 	flag := &pflag.FlagSet{}
 
-	flag.StringVar(
-		&exporter.PackageFilter,
+	flag.String(
 		PackageFilter,
 		"",
 		"default is null\nonly one package running when you want to run specific package",

@@ -17,6 +17,7 @@ func MakeValidatorInfoList(
 	chainID string, chainInfoID int64,
 	chainName string, isConsumer bool,
 	newValidatorAddressMap map[string]bool,
+	height ...int64,
 ) ([]indexermodel.ValidatorInfo, error) {
 	switch true {
 	case chainName == "bera":
@@ -37,6 +38,45 @@ func MakeValidatorInfoList(
 			}
 		}
 
+		newValidatorInfoList := make([]indexermodel.ValidatorInfo, 0)
+		for newHexAddress := range newValidatorAddressMap {
+			if _, exist := newStakingValidatorMap[newHexAddress]; !exist {
+				return nil, errors.New("unexpected error while collecting validator info data")
+			}
+			newValidatorInfoList = append(
+				newValidatorInfoList,
+				indexermodel.ValidatorInfo{
+					ChainInfoID:     chainInfoID,
+					HexAddress:      newHexAddress,
+					OperatorAddress: newStakingValidatorMap[newHexAddress].OperatorAddress,
+					Moniker:         newStakingValidatorMap[newHexAddress].Moniker,
+				})
+		}
+		return newValidatorInfoList, nil
+
+	// only for babylon checkpoint indexer
+	case chainName == "babylon" && len(height) > 0:
+		if len(height) == 0 {
+			return nil, errors.New("height was not passed")
+		}
+
+		// if there is a new validators, first make stakingvalidator map by hexAddress
+		newStakingValidatorMap := make(map[string]types.StakingValidatorMetaInfo)
+		stakingValidators, err := api.GetStakingValidatorsByHeight(app.CommonClient, chainName, height[0])
+		if err != nil {
+			return nil, errors.Cause(err)
+		}
+		for _, validator := range stakingValidators {
+			decodedKey, _ := base64.StdEncoding.DecodeString(validator.ConsensusPubkey.Key)
+			hexAddress, err := sdkhelper.MakeProposerAddress(validator.ConsensusPubkey.Type, decodedKey)
+			if err != nil {
+				return nil, errors.Cause(err)
+			}
+			newStakingValidatorMap[hexAddress] = types.StakingValidatorMetaInfo{
+				Moniker:         validator.Description.Moniker,
+				OperatorAddress: validator.OperatorAddress,
+			}
+		}
 		newValidatorInfoList := make([]indexermodel.ValidatorInfo, 0)
 		for newHexAddress := range newValidatorAddressMap {
 			if _, exist := newStakingValidatorMap[newHexAddress]; !exist {
@@ -140,7 +180,7 @@ func MakeValidatorInfoList(
 		for newHexAddress := range newValidatorAddressMap {
 		retryLoop:
 			if _, exist := newStakingValidatorMap[newHexAddress]; !exist {
-				app.Warnln("some validators aren't in BOND_STATUS_BONDED, retry after getting validator info from not BOND_STATUS", "Retrying... Attempt", retryCount)
+				app.Warnln("some validators aren't in BOND_STATUS_BONDED, retry after getting validator info from not BOND_STATUS_BONDED", "Retrying... Attempt", retryCount)
 				retryCount++
 				switch retryCount {
 				case 1:
@@ -153,6 +193,7 @@ func MakeValidatorInfoList(
 					GetStakingValidators(app.CommonClient, chainName, newStakingValidatorMap, types.Unspecfied)
 					goto retryLoop
 				default:
+					app.Errorf("%v", newStakingValidatorMap)
 					return nil, errors.New("unexpected error while collecting validator info data")
 				}
 			}
@@ -186,4 +227,30 @@ func GetStakingValidators(client common.CommonClient, chainName string, newStaki
 		}
 	}
 	return nil
+}
+
+func MakeFinalityProviderInfoList(c common.CommonClient, chainInfoID int64, newFinalityProviderMap map[string]bool) ([]indexermodel.FinalityProviderInfo, error) {
+	fps, err := api.GetBabylonFinalityProviderInfos(c)
+	if err != nil {
+		return nil, errors.Cause(err)
+	}
+
+	fpInfoList := make([]indexermodel.FinalityProviderInfo, 0)
+	for _, fp := range fps {
+		// if found new btc pk, it need to add fp list for indexing
+		if newFinalityProviderMap[fp.BTCPK] {
+			fpInfoList = append(fpInfoList, indexermodel.FinalityProviderInfo{
+				ChainInfoID:     chainInfoID,
+				Moniker:         fp.Description.Moniker,
+				BTCPKs:          fp.BTCPK,
+				OperatorAddress: fp.Address,
+			})
+		}
+	}
+
+	if len(fpInfoList) == 0 {
+		return nil, errors.New("unexpected err")
+	}
+
+	return fpInfoList, nil
 }

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -186,6 +187,7 @@ type ConsensusPubkey struct {
 }
 
 // ccv module
+// Returns the list of validators of a specific consumer chain
 var (
 	ProviderValidatorsQueryPath = func(consumerID string) string {
 		return fmt.Sprintf("/interchain_security/ccv/provider/consumer_validators/%s", consumerID)
@@ -207,6 +209,9 @@ type ProviderValidator struct {
 	Jailed                 bool   `json:"jailed"`
 }
 
+// see https://buf.build/cosmos/interchain-security/docs/main:interchain_security.ccv.provider.v1#interchain_security.ccv.provider.v1.QueryConsumerChainsRequest
+// The phase of the consumer chains returned (optional)
+// Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5
 var ConsumerChainListQueryPath string = "/interchain_security/ccv/provider/consumer_chains/3"
 
 type CosmosConsumerChainsResponse struct {
@@ -265,4 +270,118 @@ type CosmosUpgradeResponse struct {
 		Info                string `json:"info"`
 		UpgradedClientState string `json:"upgraded_client_state"`
 	} `json:"plan"`
+}
+
+var CosmosBlockResultsQueryPath = func(height int64) string {
+	return fmt.Sprintf("/block_results?height=%d", height)
+}
+
+type CosmosBlockResultResponse struct {
+	JsonRPC string `json:"jsonrpc" validate:"required"`
+	ID      int    `json:"id" validate:"required"`
+	Result  struct {
+		Height     string     `json:"height"`
+		TxsResults []TxResult `json:"txs_results"`
+		// case1)
+		// https://github.com/cometbft/cometbft/blob/v0.37.0/rpc/core/types/responses.go#L54
+		BeginBlockEvents []BlockEvent `json:"begin_block_events"`
+		EndBlockEvents   []BlockEvent `json:"end_block_events"`
+		// case2)
+		// https://github.com/cometbft/cometbft/blob/v0.38.0/rpc/core/types/responses.go#L54
+		FinalizeBlockEvents []BlockEvent `json:"finalize_block_events"`
+		//
+		ValidatorUpdate       interface{}           `json:"-"`
+		ConsensusParamUpdates ConsensusParamUpdates `json:"consensus_param_updates"`
+	} `json:"result" validate:"required"`
+}
+
+type ConsensusParamUpdates struct {
+	Block struct {
+		MaxBytes string `json:"max_bytes"`
+		MaxGas   string `json:"max_gas"`
+	}
+}
+
+type TxResult struct {
+	Code      int64        `json:"code"`
+	Data      string       `json:"data"`
+	GasWanted string       `json:"gas_wanted"`
+	GasUsed   string       `json:"gas_used"`
+	Events    []BlockEvent `json:"events"`
+}
+
+type BlockEvent struct {
+	TypeName   string      `json:"type"`
+	Attributes []Attribute `json:"attributes"`
+}
+
+type Attribute struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	Index bool   `json:"index"`
+}
+
+var (
+	CosmosLimitedBlockTxsQueryPath = func(blockHeight int64) string {
+		return fmt.Sprintf("/cosmos/tx/v1beta1/txs/block/%d?pagination.limit=1", blockHeight)
+	}
+
+	// This query suffers from a bug in the cosmos-sdk
+	// that prevents the ‘next_key’ from being checked.
+	// Therefore, it tries to lookup the entire tx at once using pagination.limit=1000.
+	CosmosBlockTxsQueryPath = func(blockHeight int64) string {
+		return fmt.Sprintf("/cosmos/tx/v1beta1/txs/block/%d?pagination.limit=1000", blockHeight)
+	}
+)
+
+type CosmosBlockAndTxsResponse struct {
+	Txs   []CosmosTx `json:"txs"`
+	Block struct {
+		Header struct {
+			ChainID         string    `json:"chain_id"`
+			Height          string    `json:"height"`
+			Time            time.Time `json:"time"`
+			ProposerAddress string    `json:"proposer_address"`
+		} `json:"header"`
+	} `json:"block"`
+	Pagination struct {
+		NextKey string `json:"next_key"`
+		Total   string `json:"total"`
+	} `json:"pagination"`
+}
+
+type CosmosTx struct {
+	Body struct {
+		Messages []json.RawMessage `json:"messages"`
+	} `json:"body"`
+	AuthInfo   interface{} `json:"-"`
+	Signatures []string    `json:"-"`
+}
+
+type CosmosErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Details []any  `json:"details"`
+}
+
+type CosmosBlockData struct {
+	TxResults []TxResult
+	ConsensusParamUpdates
+}
+
+var CosmosConsensusParamsQueryPath = "/cosmos/consensus/v1/params"
+
+type CosmosConsensusParams struct {
+	Params struct {
+		Block BlockParams `json:"block"`
+		// Evidence  EvidenceParams  `json:"evidence"`
+		// Validator ValidatorParams `json:"validator"`
+		// Version   VersionParams   `json:"version"`
+		// ABCI      ABCIParams      `json:"abci"`
+	} `json:"params"`
+}
+
+type BlockParams struct {
+	MaxBytes string `json:"max_bytes"`
+	MaxGas   string `json:"max_gas"`
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
@@ -121,6 +122,42 @@ func GetValidators(c common.CommonClient, height ...int64) ([]types.CosmosValida
 			return nil, errors.New("failed to find out all cosmos validators in this height")
 		}
 	}
+}
+
+func GetStakingValidatorsByHeight(c common.CommonClient, chainName string, height int64) ([]types.CosmosStakingValidator, error) {
+	queryPath := types.CosmosStakingValidatorQueryPath(string(types.Bonded))
+	stakingValidatorParser := parser.CosmosStakingValidatorParser
+
+	// init context
+	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
+	defer cancel()
+
+	// create requester
+	requester := c.APIClient.R().SetContext(ctx)
+
+	// set header by block height
+	heightStr := strconv.FormatInt(height, 10)
+	header := map[string]string{"Content-Type": "application/json", "x-cosmos-block-height": heightStr}
+	requester.SetHeaders(header)
+
+	// get on-chain validators in staking module
+	resp, err := requester.Get(queryPath)
+	if err != nil {
+		// c.Errorf("api error: %s", err)
+		return nil, errors.Wrap(err, "failed in api")
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, errors.Errorf("got %d code from %s", resp.StatusCode(), resp.Request.URL)
+	}
+
+	stakingValidators, err := stakingValidatorParser(resp.Body())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed in api")
+	}
+
+	// logging total validators count
+	// c.Debugf("total cosmos staking validators: %d", len(stakingValidators))
+	return stakingValidators, nil
 }
 
 // TODO: Move parsing logic into parser module for other blockchains
@@ -250,4 +287,88 @@ func GetConsumerChainHRP(c common.CommonClient) (string, error) {
 	}
 
 	return hrp, nil
+}
+
+// query a new block to find missed validators index
+func GetBlockResults(c common.CommonClient, height int64) (
+	/* txs events */ []types.BlockEvent,
+	/* block events */ []types.BlockEvent,
+	/* consensus param */ types.CosmosBlockData,
+	/* unexpected error */ error,
+) {
+
+	// init context
+	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
+	defer cancel()
+
+	// create requester
+	requester := c.RPCClient.R().SetContext(ctx)
+
+	resp, err := requester.Get(types.CosmosBlockResultsQueryPath(height))
+	if err != nil {
+		return nil, nil, types.CosmosBlockData{}, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, nil, types.CosmosBlockData{}, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+
+	}
+
+	txsEvents, blockEvents, blockData, err := parser.CosmosBlockResultsParser(resp.Body())
+	if err != nil {
+		return nil, nil, types.CosmosBlockData{}, errors.WithStack(err)
+	}
+
+	return txsEvents, blockEvents, blockData, nil
+}
+
+// query block and txs data by using cosmos api endpoint
+func GetBlockAndTxs(c common.CommonClient, height int64) (
+	int64,
+	time.Time,
+	[]types.CosmosTx,
+	error,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
+	defer cancel()
+
+	requester := c.APIClient.R().SetContext(ctx)
+	resp, err := requester.Get(types.CosmosBlockTxsQueryPath(height))
+	if err != nil {
+		return 0, time.Time{}, nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
+	}
+
+	if resp.StatusCode() == http.StatusBadRequest {
+		var result types.CosmosErrorResponse
+		err = json.Unmarshal(resp.Body(), &result)
+		if err != nil {
+			return 0, time.Time{}, nil, errors.Wrap(err, "failed to unmarshal response")
+		}
+
+		if result.Code == 3 {
+			return height, time.Time{}, []types.CosmosTx{}, nil
+		} else {
+			return 0, time.Time{}, nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+		}
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return 0, time.Time{}, nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+	}
+
+	var result types.CosmosBlockAndTxsResponse
+	err = json.Unmarshal(resp.Body(), &result)
+	if err != nil {
+		return 0, time.Time{}, nil, errors.Wrap(err, "failed to unmarshal response")
+	}
+
+	if result.Pagination.NextKey != "" {
+		return 0, time.Time{}, nil, errors.New("pagination is not supported yet")
+	}
+
+	blockHeight, err := strconv.ParseInt(result.Block.Header.Height, 10, 64)
+	if err != nil {
+		return 0, time.Time{}, nil, errors.Wrap(err, "failed to parse block height")
+	}
+
+	return blockHeight, result.Block.Header.Time, result.Txs, nil
 }

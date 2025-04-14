@@ -35,7 +35,7 @@ func (repo *MetaRepository) InitializeIndexPointerByChainID(
 		Where("index_name = ?", indexTableName).
 		Exists(ctx)
 	if err != nil {
-		// already initalized index pointer for current chain_info_id
+		// already initialized index pointer for current chain_info_id
 		return errors.Wrap(err, "failed to check index_pointer was already exsited in the meta.index_point")
 	}
 
@@ -85,7 +85,7 @@ func (repo *MetaRepository) GetLastIndexPointerByIndexTableName(indexTableName s
 	return ip, nil
 }
 
-func (repo *MetaRepository) CheckIndexpoinerAlreadyInitialized(indexTableName string, chainInfoID int64) (bool, error) {
+func (repo *MetaRepository) CheckIndexPointerAlreadyInitialized(indexTableName string, chainInfoID int64) (bool, error) {
 	ctx := context.Background()
 	defer ctx.Done()
 
@@ -103,4 +103,34 @@ func (repo *MetaRepository) CheckIndexpoinerAlreadyInitialized(indexTableName st
 		return false, errors.Wrapf(err, "failed to select count(*) in index_pointer table where validator_miss")
 	}
 	return true, nil
+}
+
+func (repo *MetaRepository) UpdateIndexPointer(indexTableName, chainID string, indexPointerHeight int64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), repo.defaultTimeout)
+	defer cancel()
+
+	chainInfo := &model.ChainInfo{}
+	err := repo.
+		NewSelect().
+		Model(chainInfo).
+		Column("id").
+		Where("chain_id = ?", chainID).
+		Scan(ctx)
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to select chain_info id by chain_id")
+	}
+
+	_, err = repo.
+		NewUpdate().
+		Model(&model.IndexPointer{}).
+		Set("pointer = ?", indexPointerHeight).
+		Where("chain_info_id = ?", chainInfo.ID).
+		Where("index_name = ?", indexTableName).
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update new index pointer")
+	}
+
+	return nil
 }

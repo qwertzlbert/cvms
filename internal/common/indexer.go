@@ -9,14 +9,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// metrics name for indexer
-const (
-	IndexPointerBlockHeightMetricName    = "latest_index_pointer_block_height"
-	IndexPointerBlockTimestampMetricName = "latest_index_pointer_block_timestamp"
-	LatestBlockHeightMetricName          = "latest_block_height"
-	RecentMissCounterMetricName          = "recent_miss_counter"
-)
-
 type Indexer struct {
 	CommonApp
 	ChainName    string
@@ -29,13 +21,16 @@ type Indexer struct {
 	MonikerIDMap indexertypes.MonikerIDMap
 	Endpoints
 	*IndexerDB
-	Vim           indexertypes.ValidatorIDMap
-	Lh            indexertypes.LatestHeightCache
-	Factory       promauto.Factory
-	MetricsMap    map[string]prometheus.Gauge
-	MetricsVecMap map[string]*prometheus.GaugeVec
-	RootLabels    prometheus.Labels
-	PackageLabels prometheus.Labels
+	Vim                indexertypes.ValidatorIDMap
+	VAM                indexertypes.ValidatorAddressMap
+	Lh                 indexertypes.LatestHeightCache
+	Factory            promauto.Factory
+	MetricsMap         map[string]prometheus.Gauge
+	MetricsVecMap      map[string]*prometheus.GaugeVec
+	MetricsCountMap    map[string]prometheus.Counter
+	MetricsCountVecMap map[string]*prometheus.CounterVec
+	RootLabels         prometheus.Labels
+	PackageLabels      prometheus.Labels
 }
 
 // TODO: not implemented
@@ -80,12 +75,15 @@ func NewIndexer(p Packager, subsystem string, chainID string) *Indexer {
 		Endpoints:    p.Endpoints,
 		IndexerDB:    p.IndexerDB,
 		Vim:          make(indexertypes.ValidatorIDMap, 0),
+		VAM:          make(indexertypes.ValidatorAddressMap, 0),
 		// skip latestHeightCache
-		Factory:       p.Factory,
-		MetricsMap:    map[string]prometheus.Gauge{},
-		MetricsVecMap: map[string]*prometheus.GaugeVec{},
-		RootLabels:    BuildRootLabels(p),
-		PackageLabels: BuildPackageLabels(p),
+		Factory:            p.Factory,
+		MetricsMap:         map[string]prometheus.Gauge{},
+		MetricsCountMap:    map[string]prometheus.Counter{},
+		MetricsVecMap:      map[string]*prometheus.GaugeVec{},
+		MetricsCountVecMap: map[string]*prometheus.CounterVec{},
+		RootLabels:         BuildRootLabels(p),
+		PackageLabels:      BuildPackageLabels(p),
 	}
 }
 
@@ -109,7 +107,7 @@ func (indexer *Indexer) FetchLatestHeight() {
 		}
 
 		// if loop is true, update metrics
-		indexer.MetricsMap[LatestBlockHeightMetricName].Set(float64(indexer.Lh.LatestHeight))
-		indexer.Infof("update prometheus metrics %d height", indexer.Lh.LatestHeight)
+		// indexer.MetricsMap[LatestBlockHeightMetricName].Set(float64(indexer.Lh.LatestHeight))
+		indexer.Debugf("update prometheus metrics %d height", indexer.Lh.LatestHeight)
 	}
 }

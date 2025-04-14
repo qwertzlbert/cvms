@@ -19,7 +19,7 @@ func (vidx *VoteIndexer) batchSync(lastIndexPointerHeight, newIndexPointerHeight
 	/* error */ error,
 ) {
 	if lastIndexPointerHeight >= vidx.Lh.LatestHeight {
-		vidx.Infof("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, vidx.Lh.LatestHeight)
+		vidx.Debugf("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, vidx.Lh.LatestHeight)
 		return lastIndexPointerHeight, nil
 	}
 
@@ -166,7 +166,7 @@ func (vidx *VoteIndexer) batchSync(lastIndexPointerHeight, newIndexPointerHeight
 		if err != nil {
 			// NOTE: fetch again validator_info list, actually already inserted the list by other indexer service
 			vidx.FetchValidatorInfoList()
-			return lastIndexPointerHeight, errors.Wrap(err, "failed to insert new hex address list")
+			return lastIndexPointerHeight, errors.WithStack(err)
 		}
 
 		// get already saved tendermint validator list for mapping validators ids
@@ -247,7 +247,7 @@ func (vidx *VoteIndexer) batchSync(lastIndexPointerHeight, newIndexPointerHeight
 	}
 
 	// update metrics
-	vidx.updatePrometheusMetrics(blockSummaryList[endHeight].BlockHeight, blockSummaryList[endHeight].BlockTimeStamp)
+	vidx.updateRootMetrics(blockSummaryList[endHeight].BlockHeight, blockSummaryList[endHeight].BlockTimeStamp)
 	return blockSummaryList[endHeight].BlockHeight, nil
 }
 

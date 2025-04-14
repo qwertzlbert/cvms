@@ -14,8 +14,9 @@ import (
 const healthCheckerTimeInterval = 5 * time.Second
 
 type OnchainStatus struct {
-	ChainID     string
-	BlockHeight int64
+	ChainID             string
+	BlockHeight         int64
+	EarliestBlockHeight int64
 }
 
 func getStatusForCosmos(client *http.Client, url string, resultChan chan<- OnchainStatus) {
@@ -34,21 +35,23 @@ func getStatusForCosmos(client *http.Client, url string, resultChan chan<- Oncha
 		return
 	}
 
-	chainID, blockHeight, err := CosmosStatusParser(bodyBytes)
+	chainID, blockHeight, earliestBlockHeight, err := CosmosStatusParser(bodyBytes)
 	if err != nil {
 		resultChan <- OnchainStatus{}
 		return
 	}
 
 	resultChan <- OnchainStatus{
-		ChainID:     chainID,
-		BlockHeight: blockHeight,
+		ChainID:             chainID,
+		BlockHeight:         blockHeight,
+		EarliestBlockHeight: earliestBlockHeight,
 	}
 }
 
 func CosmosStatusParser(resp []byte) (
 	/* on-chain id */ string,
 	/* on-chain height*/ int64,
+	/* node earliest block height */ int64,
 	/* unexpected error */ error,
 ) {
 	type StatusResponse struct {
@@ -56,9 +59,10 @@ func CosmosStatusParser(resp []byte) (
 			Network string `json:"network"`
 		} `json:"node_info"`
 		SyncInfo struct {
-			LatestBlockHeight string    `json:"latest_block_height"`
-			LatestBlockTime   time.Time `json:"latest_block_time"`
-			CatchingUp        bool      `json:"catching_up"`
+			LatestBlockHeight   string    `json:"latest_block_height"`
+			LatestBlockTime     time.Time `json:"latest_block_time"`
+			EarliestBlockHeight string    `json:"earliest_block_height"`
+			CatchingUp          bool      `json:"catching_up"`
 		} `json:"sync_info"`
 		ValidatorInfo map[string]any `json:"validator_info"`
 	}
@@ -74,9 +78,13 @@ func CosmosStatusParser(resp []byte) (
 		if err := json.Unmarshal(resp, &status); err == nil && status.JsonRPC != "" {
 			blockHeight, err := strconv.ParseInt(status.Result.SyncInfo.LatestBlockHeight, 10, 64)
 			if err != nil {
-				return "", 0, err
+				return "", 0, 0, err
 			}
-			return status.Result.NodeInfo.Network, blockHeight, nil
+			ealiestBlockHeight, err := strconv.ParseInt(status.Result.SyncInfo.EarliestBlockHeight, 10, 64)
+			if err != nil {
+				return "", 0, 0, err
+			}
+			return status.Result.NodeInfo.Network, blockHeight, ealiestBlockHeight, nil
 		}
 	}
 
@@ -87,13 +95,17 @@ func CosmosStatusParser(resp []byte) (
 		if err := json.Unmarshal(resp, &status); err == nil {
 			blockHeight, err := strconv.ParseInt(status.SyncInfo.LatestBlockHeight, 10, 64)
 			if err != nil {
-				return "", 0, err
+				return "", 0, 0, err
 			}
-			return status.NodeInfo.Network, blockHeight, nil
+			ealiestBlockHeight, err := strconv.ParseInt(status.SyncInfo.EarliestBlockHeight, 10, 64)
+			if err != nil {
+				return "", 0, 0, err
+			}
+			return status.NodeInfo.Network, blockHeight, ealiestBlockHeight, nil
 		}
 	}
 
-	return "", 0, errors.New("unrecognized response format for cosmos status")
+	return "", 0, 0, errors.New("unrecognized response format for cosmos status")
 }
 
 // TODO: not implemented

@@ -10,20 +10,33 @@ import (
 
 var (
 	IndexPackages = []string{
-		// consensus
+		// CometBFT
 		"voteindexer",
 		"veindexer",
+		"block-data-analytics",
+
+		// Babylon
+		"babylon-checkpoint",
+		"babylon-btc-lightclient",
+		"babylon-covenant-committee",
+		"babylon-finality-provider-indexer",
+
+		// Axelar
+		"axelar-amplifier-verifier",
 	}
 
 	ExporterPackages = []string{
-		// health
-		"block",
-		// consensus
+		// CometBFT
 		"uptime",
-		// utility
-		"balance", "upgrade",
-		// duty
+
+		// Defaults
+		"block", "balance", "upgrade", "block-data-analytics",
+
+		// Duties
 		"axelar-evm", "eventnonce", "oracle", "yoda",
+
+		// Babylon
+		"babylon-finality-provider-uptime", "babylon-btc-delegations",
 	}
 )
 

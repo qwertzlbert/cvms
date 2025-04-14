@@ -17,9 +17,6 @@ var (
 	_ common.CollectorLoop  = loop
 )
 
-// NOTE: this is for solo mode
-var packageMonikers []string
-
 const (
 	Subsystem                    = "uptime"
 	SubsystemSleep               = 10 * time.Second
@@ -28,11 +25,12 @@ const (
 	JailedMetricName             = "jailed"
 	SignedBlocksWindowMetricName = "signed_blocks_window"
 	MinSignedPerWindowMetricName = "min_signed_per_window"
+
+	METRIC_NAME_VP = "validator_voting_power"
 )
 
 func Start(p common.Packager) error {
 	if ok := helper.Contains(types.SupportedProtocolTypes, p.ProtocolType); ok {
-		packageMonikers = p.Monikers
 		exporter := common.NewExporter(p)
 		for _, rpc := range p.RPCs {
 			exporter.SetRPCEndPoint(rpc)
@@ -57,7 +55,7 @@ func Start(p common.Packager) error {
 		go loop(exporter, p)
 		return nil
 	}
-	return errors.Errorf("unsupprted protocol type: %s", p.ProtocolType)
+	return errors.Errorf("unsupported protocol type: %s", p.ProtocolType)
 }
 
 func loop(exporter *common.Exporter, p common.Packager) {
@@ -81,6 +79,18 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		Namespace:   common.Namespace,
 		Subsystem:   Subsystem,
 		Name:        JailedMetricName,
+		ConstLabels: packageLabels,
+	}, []string{
+		common.MonikerLabel,
+		common.ValidatorAddressLabel,
+		common.ConsensusAddressLabel,
+		common.ProposerAddressLabel,
+	})
+
+	vpMetric := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   Subsystem,
+		Name:        METRIC_NAME_VP,
 		ConstLabels: packageLabels,
 	}, []string{
 		common.MonikerLabel,
@@ -160,11 +170,19 @@ func loop(exporter *common.Exporter, p common.Packager) {
 						common.MonikerLabel:          item.Moniker,
 					}).
 					Set(float64(item.IsTomstoned))
+				vpMetric.
+					With(prometheus.Labels{
+						common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
+						common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
+						common.ProposerAddressLabel:  item.ProposerAddress,
+						common.MonikerLabel:          item.Moniker,
+					}).
+					Set(item.VotingPower)
 			}
 		} else {
 			// update metrics by each validators
 			for _, item := range status.Validators {
-				if ok := helper.Contains(packageMonikers, item.Moniker); ok {
+				if ok := helper.Contains(p.Monikers, item.Moniker); ok {
 					uptimeMetric.
 						With(prometheus.Labels{
 							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
@@ -181,6 +199,14 @@ func loop(exporter *common.Exporter, p common.Packager) {
 							common.MonikerLabel:          item.Moniker,
 						}).
 						Set(float64(item.IsTomstoned))
+					vpMetric.
+						With(prometheus.Labels{
+							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
+							common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
+							common.ProposerAddressLabel:  item.ProposerAddress,
+							common.MonikerLabel:          item.Moniker,
+						}).
+						Set(item.VotingPower)
 				}
 			}
 		}

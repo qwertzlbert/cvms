@@ -10,8 +10,10 @@ const ErrorPrefix = "cvms common errors"
 var ErrCanSkip = fmt.Errorf("skip")
 
 var (
-	ErrFailedToBuildPackager      = errors.New("failed to build the packger").Error()
+	ErrFailedToBuildPackager      = errors.New("failed to build the package").Error()
 	ErrUnDefinedSomeConfiguration = errors.New("undefinded port or something in your prometheus config file")
+	ErrUnSupportedMessageType     = errors.New("unsupported message type")
+	ErrUnSupportedEventType       = errors.New("unsupported event type")
 	ErrUnDefinedApp               = fmt.Errorf("%s: undefinded app name", ErrorPrefix)
 	ErrUnSupportedPackage         = fmt.Errorf("%s: this is unsupported monitoring package", ErrorPrefix)
 	ErrUnSupportedMethod          = fmt.Errorf("%s: this is unsupported method", ErrorPrefix)
