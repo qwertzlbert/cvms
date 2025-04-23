@@ -38,7 +38,7 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 	}
 
 	// get contract info
-	chainNameMap, err := GetVerifierContractAddressMap(idx.CommonClient, false)
+	chainNameMap, err := GetVerifierContractAddressMap(idx.CommonClient, idx.Mainnet)
 	if err != nil {
 		return lastIndexPoint, errors.Wrap(err, "failed get verifier register contract address")
 	}
@@ -198,7 +198,7 @@ func (idx *AxelarAmplifierVerifierIndexer) batchSync(lastIndexPoint int64) (
 		for _, pv := range summary[h].pollVotes {
 			contractInfo, exist := chainNameMap[pv.ContractAddress]
 			if !exist {
-				return lastIndexPoint, errors.New("unexpected poll voted was occured")
+				return lastIndexPoint, errors.Errorf("unexpected poll voted was occured: %v", pv.ContractAddress)
 			}
 
 			verifierID, exist := idx.Vim[pv.VerifierAddress]
