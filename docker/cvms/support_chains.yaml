@@ -912,7 +912,7 @@ neutron-1:
   chain_name: neutron
   protocol_type: cosmos
   mainnet: true
-  consumer: true
+  consumer: false
   support_asset:
     denom: untrn
     decimal: 6
