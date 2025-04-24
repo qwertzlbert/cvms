@@ -714,8 +714,8 @@
     "list": [
       {
         "current": {
-          "text": "axelar-dojo-1",
-          "value": "axelar-dojo-1"
+          "text": "axelar-testnet-lisbon-3",
+          "value": "axelar-testnet-lisbon-3"
         },
         "datasource": {
           "type": "prometheus",
@@ -761,8 +761,8 @@
       },
       {
         "current": {
-          "text": "axelar_dojo_1",
-          "value": "axelar_dojo_1"
+          "text": "axelar_testnet_lisbon_3",
+          "value": "axelar_testnet_lisbon_3"
         },
         "datasource": {
           "type": "prometheus",
@@ -802,8 +802,8 @@
       },
       {
         "current": {
-          "text": "5",
-          "value": "5"
+          "text": "1",
+          "value": "1"
         },
         "description": "Waiting time for finalizing amplifier voting status",
         "label": "interval minutes",
@@ -811,8 +811,8 @@
         "options": [
           {
             "selected": true,
-            "text": "5",
-            "value": "5"
+            "text": "1",
+            "value": "1"
           }
         ],
         "query": "1",
