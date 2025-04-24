@@ -4,6 +4,8 @@ type BabylonFinalityProviderUptimeStatues struct {
 	MinSignedPerWindow      float64
 	SignedBlocksWindow      float64
 	FinalityProvidersStatus []FinalityProviderUptimeStatus
+	LastFinalizedBlockInfo
+	FinalityProviderTotal
 }
 
 type FinalityProviderUptimeStatus struct {
@@ -11,6 +13,21 @@ type FinalityProviderUptimeStatus struct {
 	Address            string
 	BTCPK              string
 	MissedBlockCounter float64
-	Active             string
-	Jailed             string
+	Active             float64
+	Status             float64
+	VotingPower        float64
+}
+
+type LastFinalizedBlockInfo struct {
+	MissingVotes float64
+	MissingVP    float64
+	FinalizedVP  float64
+	BlockHeight  float64
+}
+
+type FinalityProviderTotal struct {
+	Active   int
+	Inactive int
+	Jailed   int
+	Slashed  int
 }

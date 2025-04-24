@@ -62,7 +62,7 @@ func (idx *AxelarAmplifierVerifierIndexer) Start() error {
 		return errors.Wrap(err, "failed to fetch validator_info list")
 	}
 
-	idx.Infof("loaded index pointer: %d, loaded VIM length: %d VAM: %d", initIndexPointer.Pointer, len(idx.Vim), len(idx.VAM))
+	idx.Infof("loaded index pointer: %d, loaded VIM ID map: %d Addr map: %d", initIndexPointer.Pointer, len(idx.Vim), len(idx.VAM))
 
 	// init indexer metrics
 	idx.initLabelsAndMetrics()
