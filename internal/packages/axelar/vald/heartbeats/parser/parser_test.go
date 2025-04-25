@@ -13,7 +13,7 @@ import (
 	"github.com/cosmostation/cvms/internal/common/api"
 	"github.com/cosmostation/cvms/internal/helper"
 	"github.com/cosmostation/cvms/internal/helper/logger"
-	"github.com/cosmostation/cvms/internal/packages/duty/axelar-evm/types"
+	"github.com/cosmostation/cvms/internal/packages/axelar/vald/heartbeats/types"
 	"github.com/stretchr/testify/assert"
 )
 

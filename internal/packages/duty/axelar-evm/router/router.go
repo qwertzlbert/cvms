@@ -34,24 +34,3 @@ func GetStatus(exporter *common.Exporter, chainName string) (types.CommonAxelarN
 		return types.CommonAxelarNexus{}, common.ErrOutOfSwitchCases
 	}
 }
-
-func GetHeartbeats(exporter *common.Exporter, chainName string) (types.CommonAxelarHeartbeats, error) {
-	var (
-		commonProxyResisterQueryPath string
-		commonProxyResisterParser    func(resp []byte) (types.AxelarProxyResisterStatus, error)
-	)
-
-	switch chainName {
-	case "axelar":
-		commonProxyResisterQueryPath = types.AxelarProxyResisterQueryPath
-		commonProxyResisterParser = parser.AxelarProxyResisterParser
-
-		return api.GetAxelarHeartbeatsStatus(
-			exporter,
-			commonProxyResisterQueryPath, commonProxyResisterParser,
-		)
-
-	default:
-		return types.CommonAxelarHeartbeats{}, common.ErrOutOfSwitchCases
-	}
-}

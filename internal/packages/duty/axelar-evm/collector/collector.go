@@ -24,9 +24,8 @@ const (
 	SubsystemSleep = 60 * time.Second
 	UnHealthSleep  = 10 * time.Second
 
-	MaintainerMetricName           = "maintainer_status"
-	ActivatedEvmChainMetricName    = "activated_chain"
-	HeartBeatsCountTotalMetricName = "heartbeats_count_total"
+	MaintainerMetricName        = "maintainer_status"
+	ActivatedEvmChainMetricName = "activated_chain"
 )
 
 func Start(p common.Packager) error {
@@ -60,18 +59,6 @@ func loop(c *common.Exporter, p common.Packager) {
 		common.ValidatorAddressLabel,
 		common.MonikerLabel,
 		common.EvmChainLabel,
-	})
-
-	heartbeatsMetric := p.Factory.NewCounterVec(prometheus.CounterOpts{
-		Namespace:   common.Namespace,
-		Subsystem:   Subsystem,
-		Name:        HeartBeatsCountTotalMetricName,
-		ConstLabels: packageLabels,
-	}, []string{
-		common.MonikerLabel,
-		common.ValidatorAddressLabel,
-		common.BroadcastorAddressLabel,
-		"status",
 	})
 
 	// each chains
@@ -112,19 +99,6 @@ func loop(c *common.Exporter, p common.Packager) {
 			continue
 		}
 
-		heartbeats, err := router.GetHeartbeats(c, p.ChainName)
-		if err != nil {
-			common.Health.With(rootLabels).Set(0)
-			common.Ops.With(rootLabels).Inc()
-
-			c.Logger.Errorf("failed to update heartbeats metrics: %s", err.Error())
-			time.Sleep(SubsystemSleep)
-
-			continue
-		}
-
-		initHeartbeatsMetric(heartbeatsMetric, p.Monikers, heartbeats.Validators, p.Mode)
-
 		if p.Mode == common.NETWORK {
 			// update metrics by each validators
 			for _, item := range status.Validators {
@@ -135,16 +109,6 @@ func loop(c *common.Exporter, p common.Packager) {
 						common.MonikerLabel:          item.Moniker,
 					}).
 					Set(float64(item.Status))
-			}
-
-			for _, item := range heartbeats.Validators {
-				heartbeatsMetric.
-					With(prometheus.Labels{
-						common.MonikerLabel:            item.Moniker,
-						common.ValidatorAddressLabel:   item.ValidatorOperatorAddress,
-						common.BroadcastorAddressLabel: item.BroadcastorAddress,
-						"status":                       item.Status,
-					}).Add(1)
 			}
 		} else {
 			// filter metrics for only specific validator
@@ -157,18 +121,6 @@ func loop(c *common.Exporter, p common.Packager) {
 							common.MonikerLabel:          item.Moniker,
 						}).
 						Set(item.Status)
-				}
-			}
-
-			for _, item := range heartbeats.Validators {
-				if ok := helper.Contains(p.Monikers, item.Moniker); ok {
-					heartbeatsMetric.
-						With(prometheus.Labels{
-							common.MonikerLabel:            item.Moniker,
-							common.ValidatorAddressLabel:   item.ValidatorOperatorAddress,
-							common.BroadcastorAddressLabel: item.BroadcastorAddress,
-							"status":                       item.Status,
-						}).Add(1)
 				}
 			}
 		}
@@ -188,47 +140,5 @@ func loop(c *common.Exporter, p common.Packager) {
 
 		// sleep
 		time.Sleep(SubsystemSleep)
-	}
-}
-
-func initHeartbeatsMetric(metric *prometheus.CounterVec, monikers []string, validators []types.BroadcastorStatus, mode common.Mode) {
-	if mode == common.NETWORK {
-		for _, item := range validators {
-			metric.
-				With(prometheus.Labels{
-					common.MonikerLabel:            item.Moniker,
-					common.ValidatorAddressLabel:   item.ValidatorOperatorAddress,
-					common.BroadcastorAddressLabel: item.BroadcastorAddress,
-					"status":                       "success",
-				}).Add(0)
-
-			metric.
-				With(prometheus.Labels{
-					common.MonikerLabel:            item.Moniker,
-					common.ValidatorAddressLabel:   item.ValidatorOperatorAddress,
-					common.BroadcastorAddressLabel: item.BroadcastorAddress,
-					"status":                       "missed",
-				}).Add(0)
-		}
-	} else {
-		for _, item := range validators {
-			if ok := helper.Contains(monikers, item.Moniker); ok {
-				metric.
-					With(prometheus.Labels{
-						common.MonikerLabel:            item.Moniker,
-						common.ValidatorAddressLabel:   item.ValidatorOperatorAddress,
-						common.BroadcastorAddressLabel: item.BroadcastorAddress,
-						"status":                       "success",
-					}).Add(0)
-
-				metric.
-					With(prometheus.Labels{
-						common.MonikerLabel:            item.Moniker,
-						common.ValidatorAddressLabel:   item.ValidatorOperatorAddress,
-						common.BroadcastorAddressLabel: item.BroadcastorAddress,
-						"status":                       "missed",
-					}).Add(0)
-			}
-		}
 	}
 }
