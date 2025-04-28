@@ -140,6 +140,7 @@ axelar-dojo-1:
     - voteindexer
     - axelar-amplifier-verifier
     - axelar-vald-heartbeats
+    - block-data-analytics
 axelar-testnet-lisbon-3:
   chain_name: axelar
   protocol_type: cosmos
@@ -155,6 +156,7 @@ axelar-testnet-lisbon-3:
     - voteindexer
     - axelar-amplifier-verifier
     - axelar-vald-heartbeats
+    - block-data-analytics
 band-laozi-testnet6:
   chain_name: band
   protocol_type: cosmos
@@ -200,6 +202,25 @@ bbn-test-5:
     - babylon-finality-provider-indexer
     - babylon-finality-provider-uptime
     - babylon-btc-delegations
+bbn-1:
+  chain_name: babylon
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: ubbn
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+    - block-data-analytics
+    - babylon-checkpoint
+    - babylon-btc-lightclient
+    - babylon-covenant-committee
+    - babylon-finality-provider-indexer
+    - babylon-finality-provider-uptime
+    - babylon-btc-delegations        
 bitcanna-1:
   chain_name: bitcanna
   protocol_type: cosmos
@@ -574,6 +595,18 @@ humans_1089-1:
     - upgrade
     - uptime
     - voteindexer
+hippo-protocol-testnet-1:
+  chain_name: hippocrat
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: ahp
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer        
 iliad-0:
   chain_name: story
   protocol_type: cosmos
@@ -883,7 +916,7 @@ neutron-1:
   chain_name: neutron
   protocol_type: cosmos
   mainnet: true
-  consumer: true
+  consumer: false
   support_asset:
     denom: untrn
     decimal: 6

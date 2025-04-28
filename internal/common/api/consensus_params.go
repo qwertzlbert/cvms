@@ -14,7 +14,7 @@ func GetCosmosConsensusParams(c common.CommonClient) (float64, float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
+	requester := c.RPCClient.R().SetContext(ctx)
 	resp, err := requester.Get(types.CosmosConsensusParamsQueryPath)
 	if err != nil {
 		return 0, 0, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)

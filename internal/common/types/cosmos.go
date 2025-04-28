@@ -369,16 +369,18 @@ type CosmosBlockData struct {
 	ConsensusParamUpdates
 }
 
-var CosmosConsensusParamsQueryPath = "/cosmos/consensus/v1/params"
+var CosmosConsensusParamsQueryPath = "/consensus_params"
 
 type CosmosConsensusParams struct {
-	Params struct {
-		Block BlockParams `json:"block"`
-		// Evidence  EvidenceParams  `json:"evidence"`
-		// Validator ValidatorParams `json:"validator"`
-		// Version   VersionParams   `json:"version"`
-		// ABCI      ABCIParams      `json:"abci"`
-	} `json:"params"`
+	Result struct {
+		ConsensusParams struct {
+			Block BlockParams `json:"block"`
+			// Evidence  EvidenceParams  `json:"evidence"`
+			// Validator ValidatorParams `json:"validator"`
+			// Version   VersionParams   `json:"version"`
+			// ABCI      ABCIParams      `json:"abci"`
+		} `json:"consensus_params"`
+	} `json:"result"`
 }
 
 type BlockParams struct {
