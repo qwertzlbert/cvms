@@ -7,7 +7,7 @@ import (
 	"github.com/cosmostation/cvms/internal/packages/axelar/vald/heartbeats/types"
 )
 
-func GetHeartbeats(exporter *common.Exporter, chainName string) (types.CommonAxelarHeartbeats, error) {
+func GetHeartbeats(exporter *common.Exporter, chainName string, latestHeartbeatsHeight int64) (types.CommonAxelarHeartbeats, error) {
 	var (
 		commonProxyResisterQueryPath string
 		commonProxyResisterParser    func(resp []byte) (types.AxelarProxyResisterStatus, error)
@@ -21,6 +21,7 @@ func GetHeartbeats(exporter *common.Exporter, chainName string) (types.CommonAxe
 		return api.GetAxelarHeartbeatsStatus(
 			exporter,
 			commonProxyResisterQueryPath, commonProxyResisterParser,
+			latestHeartbeatsHeight,
 		)
 
 	default:

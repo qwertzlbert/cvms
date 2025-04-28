@@ -17,7 +17,6 @@ import (
 	"github.com/cosmostation/cvms/internal/packages/axelar/vald/heartbeats/types"
 )
 
-var latestHeartbeatsHeight int64 = 0 // global state for heartbeats epoch
 const pollingSize int = 5
 
 // Always check heartbeat tx at 51, 101, 151, ... but only once at the 55th, 105th, 155th, ... block
@@ -26,6 +25,7 @@ func GetAxelarHeartbeatsStatus(
 	exporter *common.Exporter,
 	CommonProxyResisterQueryPath string,
 	CommonProxyResisterParser func([]byte) (types.AxelarProxyResisterStatus, error),
+	latestHeartbeatsHeight int64,
 ) (types.CommonAxelarHeartbeats, error) {
 	currentBlockHeight, _, err := api.GetStatus(exporter.CommonClient)
 	if err != nil {
@@ -95,7 +95,7 @@ func GetAxelarHeartbeatsStatus(
 	}
 
 	latestHeartbeatsHeight = updateHeight
-	return types.CommonAxelarHeartbeats{Validators: totalBroadcastorStatus}, nil
+	return types.CommonAxelarHeartbeats{Validators: totalBroadcastorStatus, LatestHeartBeatsHeight: updateHeight}, nil
 }
 
 func findHeartbeats(
@@ -113,7 +113,6 @@ func findHeartbeats(
 	// so we check +polling size block more to find it.
 	for i := 0; i < pollingSize; i++ {
 		blockHeight := heartbeatsHeight + int64(i)
-		exporter.Infof("Get Block Height: %d", blockHeight)
 		_, _, blockTxs, err := api.GetBlockAndTxs(exporter.CommonClient, blockHeight)
 		if err != nil {
 			return heartbeatsHeight, common.ErrFailedHttpRequest

@@ -14,7 +14,8 @@ const (
 )
 
 type CommonAxelarHeartbeats struct {
-	Validators []BroadcastorStatus
+	Validators             []BroadcastorStatus
+	LatestHeartBeatsHeight int64
 }
 
 type BroadcastorStatus struct {

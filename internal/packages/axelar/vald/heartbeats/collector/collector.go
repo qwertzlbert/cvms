@@ -61,6 +61,9 @@ func loop(c *common.Exporter, p common.Packager) {
 	})
 
 	isUnhealth := false
+	initMetricFlag := false
+	var latestHeartbeatsHeight int64 = 0
+
 	for {
 		// node health check
 		if isUnhealth {
@@ -78,7 +81,7 @@ func loop(c *common.Exporter, p common.Packager) {
 			}
 		}
 
-		heartbeats, err := router.GetHeartbeats(c, p.ChainName)
+		heartbeats, err := router.GetHeartbeats(c, p.ChainName, latestHeartbeatsHeight)
 		if err != nil {
 			common.Health.With(rootLabels).Set(0)
 			common.Ops.With(rootLabels).Inc()
@@ -89,7 +92,10 @@ func loop(c *common.Exporter, p common.Packager) {
 			continue
 		}
 
-		initHeartbeatsMetric(heartbeatsMetric, p.Monikers, heartbeats.Validators, p.Mode)
+		if !initMetricFlag {
+			initHeartbeatsMetric(heartbeatsMetric, p.Monikers, heartbeats.Validators, p.Mode)
+			initMetricFlag = true
+		}
 
 		if p.Mode == common.NETWORK {
 			// update metrics by each validators
@@ -116,6 +122,7 @@ func loop(c *common.Exporter, p common.Packager) {
 			}
 		}
 
+		latestHeartbeatsHeight = heartbeats.LatestHeartBeatsHeight
 		c.Infof("updated %s metrics successfully and going to sleep %s ...", Subsystem, SubsystemSleep.String())
 
 		// update health and ops

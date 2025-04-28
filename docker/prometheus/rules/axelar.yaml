@@ -20,3 +20,12 @@ groups:
           description: |
             In {{ $labels.chain_id }}, {{ $labels.verifier }} did not vote for some chains. 
             Check it now <https://public-cvms.cosmostation.io/d/axelar_dashboard/axelar-dashboard|here>
+  
+  - name: AxelarValdHeartbeatsPackage
+    rules:
+      - alert: AxelarValdHeartbeatsStopped
+        expr: group by (chain_id, broadcastor_address, moniker, validator_operator_address, mainnet) (increase(cvms_axelar_vald_heartbeats_count_total{status="missed"}[15m])) > 2
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Axelar Vald heartbeat has stopped for {{ $labels.moniker }} in {{ $labels.chain_id }}.'
