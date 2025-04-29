@@ -11,7 +11,6 @@ UNUSED
 **/.DS_Store
 
 # test envs
-.env.test
 tests/test.go
 
 # prod envs
