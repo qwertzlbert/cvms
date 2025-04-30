@@ -1459,6 +1459,18 @@ xrplevm_1449000-1:
     - block
     - upgrade
     - uptime
+    - voteindexer    
+xrplevm_1440000-1:
+  chain_name: xrpl-evm
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: axrp
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
     - voteindexer
 zetachain_7000-1:
   chain_name: zeta
