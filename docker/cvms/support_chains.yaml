@@ -1463,7 +1463,7 @@ xrplevm_1449000-1:
 xrplevm_1440000-1:
   chain_name: xrpl-evm
   protocol_type: cosmos
-  mainnet: false
+  mainnet: true
   support_asset:
     denom: axrp
     decimal: 18
