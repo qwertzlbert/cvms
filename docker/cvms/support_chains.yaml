@@ -1398,7 +1398,6 @@ union-testnet-8:
   packages:
     - block
     - upgrade
-    - uptime
     - voteindexer
 union-testnet-9:
   chain_name: union

@@ -179,6 +179,7 @@ type CosmosStakingValidator struct {
 		Moniker string `json:"moniker"`
 	} `json:"description"`
 	Tokens string `json:"tokens"`
+	Status string `json:"status"`
 }
 
 type ConsensusPubkey struct {
