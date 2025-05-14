@@ -655,6 +655,19 @@ initiation-2:
     - uptime
     - voteindexer
     - veindexer
+interwoven-1:
+  chain_name: initia
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: uinit
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+    - veindexer   
 injective-1:
   chain_name: injective
   protocol_type: cosmos
