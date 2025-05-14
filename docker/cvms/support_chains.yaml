@@ -595,6 +595,18 @@ humans_1089-1:
     - upgrade
     - uptime
     - voteindexer
+hippo-protocol-1:
+  chain_name: hippocrat
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: ahp
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 hippo-protocol-testnet-1:
   chain_name: hippocrat
   protocol_type: cosmos
