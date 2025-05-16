@@ -220,7 +220,7 @@ bbn-1:
     - babylon-covenant-committee
     - babylon-finality-provider-indexer
     - babylon-finality-provider-uptime
-    - babylon-btc-delegations        
+    - babylon-btc-delegations
 bitcanna-1:
   chain_name: bitcanna
   protocol_type: cosmos
@@ -618,7 +618,7 @@ hippo-protocol-testnet-1:
     - block
     - upgrade
     - uptime
-    - voteindexer        
+    - voteindexer
 iliad-0:
   chain_name: story
   protocol_type: cosmos
@@ -667,7 +667,7 @@ interwoven-1:
     - upgrade
     - uptime
     - voteindexer
-    - veindexer   
+    - veindexer
 injective-1:
   chain_name: injective
   protocol_type: cosmos
@@ -1328,6 +1328,19 @@ stride-1:
     - upgrade
     - uptime
     - voteindexer
+sahara-test-1:
+  chain_name: saharaai
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: usah
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+    - block-data-analytics
 imuachaintestnet_233-8:
   chain_name: imua
   protocol_type: cosmos
@@ -1482,7 +1495,7 @@ xrplevm_1449000-1:
     - block
     - upgrade
     - uptime
-    - voteindexer    
+    - voteindexer
 xrplevm_1440000-1:
   chain_name: xrpl-evm
   protocol_type: cosmos
