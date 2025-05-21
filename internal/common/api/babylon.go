@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 
 	"net/url"
 	"strconv"
@@ -258,7 +257,7 @@ func GetBabylonBTCDelegations(c common.CommonClient) (map[string]int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
+	requester := c.APIClient
 
 	ch := make(chan helper.Result)
 	delegationResults := make([]delegationResult, 0)
@@ -272,7 +271,7 @@ func GetBabylonBTCDelegations(c common.CommonClient) (map[string]int64, error) {
 			defer helper.HandleOutOfNilResponse(c.Entry)
 			defer wg.Done()
 
-			resp, err := requester.Get(types.BabylonBTCDelegationQuery(ds))
+			resp, err := requester.Get(ctx, types.BabylonBTCDelegationQuery(ds))
 			if err != nil {
 				if resp == nil {
 					c.Errorln("[panic] passed resp.Time() nil point err")
@@ -284,13 +283,7 @@ func GetBabylonBTCDelegations(c common.CommonClient) (map[string]int64, error) {
 				return
 			}
 
-			if resp.StatusCode() != http.StatusOK {
-				c.Errorf("api error: %d code from %s", resp.StatusCode(), resp.Request.URL)
-				ch <- helper.Result{Item: nil, Success: false}
-				return
-			}
-
-			count, err := parser.ParserBTCDelegations(resp.Body())
+			count, err := parser.ParserBTCDelegations(resp)
 			if err != nil {
 				c.Errorf("parsing failed: %s", err)
 				ch <- helper.Result{Item: nil, Success: false}
@@ -339,18 +332,15 @@ func GetLastFinalizedBlockHeight(c common.CommonClient) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.APIClient.R().SetContext(ctx)
-	resp, err := requester.Get(types.BabylonLastFinalizedBlockLimitQueryPath)
+	requester := c.APIClient
+	resp, err := requester.Get(ctx, types.BabylonLastFinalizedBlockLimitQueryPath)
 	if err != nil {
-		return 0, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return 0, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+		endpoint, _ := requester.GetEndpoint()
+		return 0, errors.Errorf("rpc call is failed from %s: %s", endpoint, err)
 	}
 
 	var result types.LastFinalityBlockResponse
-	err = json.Unmarshal(resp.Body(), &result)
+	err = json.Unmarshal(resp, &result)
 	if err != nil {
 		return 0, err
 	}

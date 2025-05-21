@@ -45,18 +45,18 @@ func TestAxelarHeartbeatsFilterInTx(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 	// create requester
-	requester := app.APIClient.R().SetContext(ctx)
+	requester := app.APIClient
 
 	_, _, blockTxs, err := api.GetBlockAndTxs(app.CommonClient, testHeight)
 	assert.NoError(t, err)
 
 	// get on-chain validators
-	resp, err := requester.Get(types.CommonValidatorQueryPath)
+	resp, err := requester.Get(ctx, types.CommonValidatorQueryPath)
 	assert.NoError(t, err)
 
 	// json unmarsharling received validators data
 	var validators types.CommonValidatorsQueryResponse
-	err = json.Unmarshal(resp.Body(), &validators)
+	err = json.Unmarshal(resp, &validators)
 	assert.NoError(t, err)
 
 	// init channel and waitgroup for go-routine
@@ -70,9 +70,9 @@ func TestAxelarHeartbeatsFilterInTx(t *testing.T) {
 
 		go func(operatorAddr, moniker string) {
 			defer wg.Done()
-			rpcRequester := app.RPCClient.R().SetContext(ctx)
+			rpcRequester := app.RPCClient
 			abciQueryPath := strings.Replace(types.AxelarProxyResisterQueryPath, "{validator_operator_address}", operatorAddr, -1)
-			resp, err := rpcRequester.Get(abciQueryPath)
+			resp, err := rpcRequester.Get(ctx, abciQueryPath)
 			if err != nil {
 				fmt.Errorf("api error: %s", err)
 				ch <- helper.Result{Item: nil, Success: false}
@@ -80,7 +80,7 @@ func TestAxelarHeartbeatsFilterInTx(t *testing.T) {
 			}
 
 			var AxelarProxyResisterResponse types.AxelarProxyResisterResponse
-			if err := json.Unmarshal(resp.Body(), &AxelarProxyResisterResponse); err != nil {
+			if err := json.Unmarshal(resp, &AxelarProxyResisterResponse); err != nil {
 				fmt.Errorf("json unmashal error: %s", err)
 				ch <- helper.Result{Item: nil, Success: false}
 				return
