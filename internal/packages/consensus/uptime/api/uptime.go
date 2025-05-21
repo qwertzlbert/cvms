@@ -66,7 +66,6 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 
 	// 3. make pubkey map by using consensus hex address with extracted valcons prefix
 	pubkeysMap := make(map[string]string)
-	vpMap := make(map[string]float64)
 	for _, validator := range validators {
 		bz, _ := hex.DecodeString(validator.Address)
 		consensusAddress, err := sdkhelper.ConvertAndEncode(bech32ValconsPrefix, bz)
@@ -74,12 +73,6 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 			return nil, common.ErrFailedConvertTypes
 		}
 		pubkeysMap[validator.Pubkey.Value] = consensusAddress
-
-		vp, err := strconv.ParseFloat(validator.VotingPower, 64)
-		if err != nil {
-			return nil, common.ErrFailedConvertTypes
-		}
-		vpMap[validator.Pubkey.Value] = vp
 	}
 
 	// 4. Sort staking validators by vp
@@ -144,7 +137,6 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 					MissedBlockCounter:        missedBlocksCounter,
 					IsTomstoned:               isTomstoned,
 					ValidatorOperatorAddress:  validatorOperatorAddress,
-					VotingPower:               vp,
 					StakedTokens:              stakedTokens,
 					CommissionRate:            commissionRate,
 					ValidatorRank:             validatorRank,

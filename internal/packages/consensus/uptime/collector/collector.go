@@ -96,18 +96,6 @@ func loop(exporter *common.Exporter, p common.Packager) {
 		common.ProposerAddressLabel,
 	})
 
-	vpMetric := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace:   common.Namespace,
-		Subsystem:   Subsystem,
-		Name:        METRIC_NAME_VP,
-		ConstLabels: packageLabels,
-	}, []string{
-		common.MonikerLabel,
-		common.ValidatorAddressLabel,
-		common.ConsensusAddressLabel,
-		common.ProposerAddressLabel,
-	})
-
 	stakedTokensMetric := p.Factory.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace:   common.Namespace,
 		Subsystem:   Subsystem,
@@ -316,14 +304,6 @@ func loop(exporter *common.Exporter, p common.Packager) {
 							common.MonikerLabel:          item.Moniker,
 						}).
 						Set(float64(item.IsTomstoned))
-					vpMetric.
-						With(prometheus.Labels{
-							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,
-							common.ConsensusAddressLabel: item.ValidatorConsensusAddress,
-							common.ProposerAddressLabel:  item.ProposerAddress,
-							common.MonikerLabel:          item.Moniker,
-						}).
-						Set(item.VotingPower)
 					stakedTokensMetric.
 						With(prometheus.Labels{
 							common.ValidatorAddressLabel: item.ValidatorOperatorAddress,

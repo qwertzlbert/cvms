@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -73,20 +72,7 @@ func GetEventNonceStatusByGRPC(
 
 			resp, err := c.GRPCClient.Post(ctx, commonOrchestratorPath, []byte(commonOrchestratorPayload))
 			if err != nil {
-				// NOTE: we need to modify this logic in the future for general cases
-
-				// case.1 : not registered validators for gravity-bridge
-				if strings.Contains(err.Error(), "codespace gravity code 3: invalid: No validator") {
-					c.Infof("got empty orchestrator address for %s, so saved empty string", validatorOperatorAddress)
-					ch <- helper.Result{Success: true, Item: types.ValidatorStatus{
-						ValidatorOperatorAddress: validatorOperatorAddress,
-						OrchestratorAddress:      "",
-						Moniker:                  validatorMoniker,
-					}}
-					return
-				}
-
-				c.Errorf("grpc error: %s for %s", err, commonOrchestratorPayload)
+				c.Errorf("grpc error: %s", err)
 				ch <- helper.Result{Success: false, Item: nil}
 				return
 			}
@@ -100,7 +86,7 @@ func GetEventNonceStatusByGRPC(
 
 			if orchestratorAddress == "" {
 				// not registered validators
-				c.Infof("got empty orchestrator address for %s, so saved empty string", validatorOperatorAddress)
+				c.Warnf("got empty orchestrator address for %s, so saved empty string", validatorOperatorAddress)
 				ch <- helper.Result{Success: true, Item: types.ValidatorStatus{
 					ValidatorOperatorAddress: validatorOperatorAddress,
 					OrchestratorAddress:      "",
