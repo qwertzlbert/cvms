@@ -8,8 +8,6 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmostation/cvms/internal/common/api"
-	"github.com/cosmostation/cvms/internal/helper/db"
-
 	"github.com/cosmostation/cvms/internal/common/function"
 	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
 	"github.com/cosmostation/cvms/internal/common/types"
@@ -48,11 +46,9 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		return lastIndexPointerEpoch, errors.Wrap(err, "failed to parse current epoch response")
 	}
 
-	if idx.RetentionPeriod != db.PersistenceMode {
-		if (currentEpoch - newIndexerPointerEpoch) > InitEpochInterval {
-			newIndexerPointerEpoch = currentEpoch - InitEpochInterval
-			idx.Infof("changed index pointer epoch: %d to ignore old epoch data", newIndexerPointerEpoch)
-		}
+	if (currentEpoch - newIndexerPointerEpoch) > InitEpochInterval {
+		newIndexerPointerEpoch = currentEpoch - InitEpochInterval
+		idx.Infof("changed index pointer epoch: %d to ignore old epoch data", newIndexerPointerEpoch)
 	}
 
 	lastFinalizedEpoch := (currentEpoch - 1)
@@ -72,19 +68,17 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 
 	idx.Infof("last finalized epoch(current_epoch -1) is %d and last index pointer epoch is %d", lastFinalizedEpoch, newIndexerPointerEpoch)
 	for epoch := int64(0); epoch <= lastFinalizedEpoch; epoch++ {
-		if epoch < 1 {
+		if epoch <= 1 {
 			continue
 		}
 
 		if newIndexerPointerEpoch > epoch {
-			// idx.Debugf("skip %d epoch. the epoch was already stored in the DB", epoch)
+			idx.Debugf("skip %d epoch. the epoch was already stored in the DB", epoch)
 			continue
 		}
 
 		idx.Debugf("sync epoch: %d", epoch)
-
-		resp, err := idx.APIClient.Get(ctx, EpochQueryPath(epoch+1)) // NOTE: for finding the first block for this epoch, we should use epoch + 1
-
+		resp, err := idx.APIClient.Get(ctx, EpochQueryPath(epoch))
 		if err != nil {
 			return lastIndexPointerEpoch, errors.Wrap(err, "failed to get epoch data")
 		}
@@ -94,9 +88,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 			return lastIndexPointerEpoch, errors.Wrap(err, "failed to get epoch data")
 		}
 
-		idx.Debugf("found %d first block height in %d epoch", firstBlockHeightInEpoch, epoch)
-
-		prevBlockHeight, preBlockTimestamp, preBlockProposerAddress, _, _, _, err := api.GetBlock(idx.CommonClient, firstBlockHeightInEpoch-1)
+		prevBlockHeight, _, preBlockProposerAddress, _, _, _, err := api.GetBlock(idx.CommonClient, firstBlockHeightInEpoch-1)
 		if err != nil {
 			idx.Errorf("failed to call at %d height data, %s", prevBlockHeight, err)
 			return lastIndexPointerEpoch, err
@@ -109,7 +101,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 			return lastIndexPointerEpoch, err
 		}
 
-		blockSummary := types.BlockSummary{BlockProposerAddress: preBlockProposerAddress, CosmosValidators: validators, BlockTimeStamp: preBlockTimestamp}
+		blockSummary := types.BlockSummary{BlockProposerAddress: preBlockProposerAddress, CosmosValidators: validators}
 
 		// update validator address
 		{
@@ -226,8 +218,7 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		}
 
 		// update epoch & metrics
-		idx.updateRootMetrics(epoch, blockSummary.BlockTimeStamp)
-		idx.updateIndexerMetrics()
+		idx.updatePrometheusMetrics(epoch, blockSummary.BlockTimeStamp)
 		idx.Debugf("updated babylon checkpoint BLS singings in %d epoch ", epoch)
 		return epoch, nil
 	}
@@ -282,11 +273,11 @@ func makeBabylonExtensionVote(
 func filterValidatorVoteListByMonikers(monikerIDMap indexertypes.MonikerIDMap, bevList []model.BabylonVoteExtension) []model.BabylonVoteExtension {
 	// already inited monikerIDMap just filter validator vote by moniker id maps
 	newValidatorVoteList := make([]model.BabylonVoteExtension, 0)
-	for _, v := range bevList {
+	for _, vv := range bevList {
 		// // only append validaor vote in package monikers
-		_, exist := monikerIDMap[v.ValidatorHexAddressID]
+		_, exist := monikerIDMap[vv.ValidatorHexAddressID]
 		if exist {
-			newValidatorVoteList = append(newValidatorVoteList, v)
+			newValidatorVoteList = append(newValidatorVoteList, vv)
 		}
 	}
 	return newValidatorVoteList

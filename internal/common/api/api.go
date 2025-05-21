@@ -271,7 +271,6 @@ func GetConsumerChainHRP(c common.CommonClient) (string, error) {
 func GetBlockResults(c common.CommonClient, height int64) (
 	/* txs events */ []types.BlockEvent,
 	/* block events */ []types.BlockEvent,
-	/* consensus param */ types.CosmosBlockData,
 	/* unexpected error */ error,
 ) {
 
@@ -281,15 +280,15 @@ func GetBlockResults(c common.CommonClient, height int64) (
 
 	resp, err := c.RPCClient.Get(ctx, types.CosmosBlockResultsQueryPath(height))
 	if err != nil {
-		return nil, nil, types.CosmosBlockData{}, errors.Errorf("rpc call is failed from %s: %s", types.CosmosBlockResultsQueryPath(height), err)
+		return nil, nil, errors.Errorf("rpc call is failed from %s: %s", types.CosmosBlockResultsQueryPath(height), err)
 	}
-	txsEvents, blockEvents, blockData, err := parser.CosmosBlockResultsParser(resp)
 
+	txsEvents, blockEvents, err := parser.CosmosBlockResultsParser(resp)
 	if err != nil {
-		return nil, nil, types.CosmosBlockData{}, errors.WithStack(err)
+		return nil, nil, errors.WithStack(err)
 	}
 
-	return txsEvents, blockEvents, blockData, nil
+	return txsEvents, blockEvents, nil
 }
 
 // query block and txs data by using cosmos api endpoint

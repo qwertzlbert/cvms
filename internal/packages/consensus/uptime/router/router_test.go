@@ -34,14 +34,14 @@ func TestGetStatus(t *testing.T) {
 			},
 		},
 		{
-			testingName:  "Stride Chain",
-			chainName:    "stride",
+			testingName:  "Neutron Chain",
+			chainName:    "neutron",
 			protocolType: "cosmos",
 			isConsumer:   true,
-			chainID:      "stride-1",
+			chainID:      "neutron-1",
 			endpoint: common.Endpoints{
-				RPCs: []string{os.Getenv("TEST_STRIDE_RPC_ENDPOINT")},
-				APIs: []string{os.Getenv("TEST_STRIDE_API_ENDPOINT")},
+				RPCs: []string{os.Getenv("TEST_NEUTRON_RPC_ENDPOINT")},
+				APIs: []string{os.Getenv("TEST_NEUTRON_API_ENDPOINT")},
 			},
 			providerEndpoint: common.Endpoints{
 				RPCs: []string{os.Getenv("TEST_COSMOS_RPC_ENDPOINT")},
@@ -49,27 +49,31 @@ func TestGetStatus(t *testing.T) {
 			},
 		},
 		{
-			testingName:  "Union Chain",
-			chainName:    "union",
+			testingName:  "Story Chain",
+			chainName:    "story",
 			protocolType: "cosmos",
 			isConsumer:   false,
-			chainID:      "union-testnet-8",
+			chainID:      "odyssey-0",
 			endpoint: common.Endpoints{
-				RPCs: []string{os.Getenv("TEST_UNION_RPC_ENDPOINT")},
-				APIs: []string{os.Getenv("TEST_UNION_API_ENDPOINT")},
+				RPCs: []string{os.Getenv("TEST_STORY_RPC_ENDPOINT")},
+				APIs: []string{os.Getenv("TEST_STORY_API_ENDPOINT")},
 			},
 		},
-		{
-			testingName:  "Initia Chain",
-			chainName:    "initia",
-			protocolType: "cosmos",
-			isConsumer:   false,
-			chainID:      "interwoven-1",
-			endpoint: common.Endpoints{
-				RPCs: []string{os.Getenv("TEST_INITIA_RPC_ENDPOINT")},
-				APIs: []string{os.Getenv("TEST_INITIA_API_ENDPOINT")},
-			},
-		},
+		// {
+		// 	testingName: "Cronos Chain",
+		// 	chainName:   "cronos",
+		// 	endpoint:    helper.SetHttpURI(os.Getenv("TEST_UPTIME_CRONOS_HOST_ADDRESS")),
+		// },
+		// {
+		// 	testingName: "Sei Chain",
+		// 	moniker:     "Cosmostation",
+		// 	hostAddress: helper.SetHttpURI(os.Getenv("TEST_UPTIME_SEI_HOST_ADDRESS")),
+		// },
+		// {
+		// 	testingName: "Iris Chain",
+		// 	moniker:     "Cosmostation",
+		// 	hostAddress: helper.SetHttpURI(os.Getenv("TEST_UPTIME_IRIS_HOST_ADDRESS")),
+		// },
 	}
 
 	for _, tc := range testCases {

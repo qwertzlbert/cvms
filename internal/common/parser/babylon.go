@@ -52,29 +52,24 @@ func ParseFinalityProviders(resp []byte) (types.FinalityProvidersResponse, error
 	return result, nil
 }
 
-func ParserFinalityParams(resp []byte) (float64, float64, int64, error) {
+func ParserFinalityParams(resp []byte) (float64, float64, error) {
 	var result types.FinalityParams
 	err := json.Unmarshal(resp, &result)
 	if err != nil {
-		return 0, 0, 0, errors.WithStack(err)
+		return 0, 0, errors.WithStack(err)
 	}
 
 	signedBlocksWindow, err := strconv.ParseFloat(result.Params.SignedBlocksWindow, 64)
 	if err != nil {
-		return 0, 0, 0, errors.WithStack(err)
+		return 0, 0, errors.WithStack(err)
 	}
 
 	minSignedPerWindow, err := strconv.ParseFloat(result.Params.MinSignedPerWindow, 64)
 	if err != nil {
-		return 0, 0, 0, errors.WithStack(err)
+		return 0, 0, errors.WithStack(err)
 	}
 
-	activationHeight, err := strconv.ParseInt(result.Params.FinalityActivationHeight, 10, 64)
-	if err != nil {
-		return 0, 0, 0, errors.WithStack(err)
-	}
-
-	return signedBlocksWindow, minSignedPerWindow, activationHeight, nil
+	return signedBlocksWindow, minSignedPerWindow, nil
 }
 
 func ParserBTCLightClientParams(resp []byte) ([]string, error) {
@@ -96,20 +91,9 @@ func ParserCovenantCommiteeParams(resp []byte) ([]string, error) {
 		return []string{}, errors.WithStack(err)
 	}
 
-	newCovenantCommitee = append(newCovenantCommitee, result.Params.CovenantPks...)
+	for _, member := range result.Params.CovenantPks {
+		newCovenantCommitee = append(newCovenantCommitee, member)
+	}
+
 	return newCovenantCommitee, nil
-}
-
-func ParserBTCDelegations(resp []byte) (int64, error) {
-	var result types.BTCDelegationsResponse
-	err := json.Unmarshal(resp, &result)
-	if err != nil {
-		return 0, err
-	}
-
-	delegationCount, err := strconv.ParseInt(result.Pagination.Total, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return delegationCount, nil
 }

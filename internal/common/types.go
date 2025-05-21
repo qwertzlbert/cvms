@@ -54,9 +54,9 @@ const (
 func (a Mode) String() string {
 	switch {
 	case a == NETWORK:
-		return "NetworkMode"
+		return "Validator Monitoring System"
 	case a == VALIDATOR:
-		return "ValidatorMode"
+		return "White List"
 	default:
 		return "Invalid Mode"
 	}

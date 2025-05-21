@@ -14,15 +14,12 @@ func InitiaStakingValidatorParser(resp []byte) ([]types.CosmosStakingValidator, 
 	}
 	commonStakingValidators := make([]types.CosmosStakingValidator, 0)
 	for _, validator := range result.Validators {
-		// NOTE: mstaking module is not supporting status query string yet.
-		if validator.Status == types.BOND_STATUS_BONDED {
-			commonStakingValidators = append(commonStakingValidators, types.CosmosStakingValidator{
-				OperatorAddress: validator.OperatorAddress,
-				ConsensusPubkey: validator.ConsensusPubkey,
-				Description:     validator.Description,
-				Tokens:          "", // initia has multiple tokens on validators, so skip the tokens
-			})
-		}
+		commonStakingValidators = append(commonStakingValidators, types.CosmosStakingValidator{
+			OperatorAddress: validator.OperatorAddress,
+			ConsensusPubkey: validator.ConsensusPubkey,
+			Description:     validator.Description,
+			Tokens:          "", // initia has multiple tokens on validators, so skip the tokens
+		})
 	}
 	return commonStakingValidators, nil
 }

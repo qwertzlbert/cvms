@@ -213,7 +213,7 @@ func (idx *FinalityProviderIndexer) batchSync(lastIndexPointerHeight int64) (
 	}
 
 	// update metrics
-	idx.updateRootMetrics(FinalityVoteSummaryList[endHeight].BlockHeight)
+	// idx.updatePrometheusMetrics(blockSummaryList[endHeight].BlockHeight, blockSummaryList[endHeight].BlockTimeStamp)
 	return FinalityVoteSummaryList[endHeight].BlockHeight, nil
 }
 
