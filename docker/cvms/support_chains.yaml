@@ -29,6 +29,18 @@ akashnet-2:
     - upgrade
     - uptime
     - voteindexer
+allora-mainnet-1:
+  chain_name: allora
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: uallo
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 allora-testnet-1:
   chain_name: allora
   protocol_type: cosmos
@@ -127,6 +139,8 @@ axelar-dojo-1:
     - axelar-evm
     - voteindexer
     - axelar-amplifier-verifier
+    - axelar-vald-heartbeats
+    - block-data-analytics
 axelar-testnet-lisbon-3:
   chain_name: axelar
   protocol_type: cosmos
@@ -141,6 +155,8 @@ axelar-testnet-lisbon-3:
     - axelar-evm
     - voteindexer
     - axelar-amplifier-verifier
+    - axelar-vald-heartbeats
+    - block-data-analytics
 band-laozi-testnet6:
   chain_name: band
   protocol_type: cosmos
@@ -179,11 +195,32 @@ bbn-test-5:
     - upgrade
     - uptime
     - voteindexer
+    - block-data-analytics
     - babylon-checkpoint
     - babylon-btc-lightclient
     - babylon-covenant-committee
     - babylon-finality-provider-indexer
     - babylon-finality-provider-uptime
+    - babylon-btc-delegations
+bbn-1:
+  chain_name: babylon
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: ubbn
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+    - block-data-analytics
+    - babylon-checkpoint
+    - babylon-btc-lightclient
+    - babylon-covenant-committee
+    - babylon-finality-provider-indexer
+    - babylon-finality-provider-uptime
+    - babylon-btc-delegations
 bitcanna-1:
   chain_name: bitcanna
   protocol_type: cosmos
@@ -436,6 +473,18 @@ dymension_1100-1:
     - upgrade
     - uptime
     - voteindexer
+deluge-1:
+  chain_name: zkcloud
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: uproof
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 evmos_9000-4:
   chain_name: evmos
   protocol_type: cosmos
@@ -546,6 +595,30 @@ humans_1089-1:
     - upgrade
     - uptime
     - voteindexer
+hippo-protocol-1:
+  chain_name: hippocrat
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: ahp
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+hippo-protocol-testnet-1:
+  chain_name: hippocrat
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: ahp
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 iliad-0:
   chain_name: story
   protocol_type: cosmos
@@ -573,6 +646,19 @@ initiation-2:
   chain_name: initia
   protocol_type: cosmos
   mainnet: false
+  support_asset:
+    denom: uinit
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+    - veindexer
+interwoven-1:
+  chain_name: initia
+  protocol_type: cosmos
+  mainnet: true
   support_asset:
     denom: uinit
     decimal: 6
@@ -740,6 +826,29 @@ lum-network-1:
     - upgrade
     - uptime
     - voteindexer
+lumera-testnet-1:
+  chain_name: lumera
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: ulume
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+ledger-testnet-1:
+  chain_name: lombard
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: ulom
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 mantle-1:
   chain_name: asset-mantle
   protocol_type: cosmos
@@ -883,7 +992,7 @@ nyx:
   protocol_type: cosmos
   mainnet: true
   support_asset:
-    denom: unyx
+    denom: unym
     decimal: 6
   packages:
     - block
@@ -1219,6 +1328,43 @@ stride-1:
     - upgrade
     - uptime
     - voteindexer
+sahara-test-1:
+  chain_name: saharaai
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: usah
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+    - block-data-analytics
+imuachaintestnet_233-8:
+  chain_name: imua
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: hua
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    # - uptime
+    # - voteindexer
+selfchain-testnet:
+  chain_name: selfchain
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: uslf
+    decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
 tabi_9788-2:
   chain_name: tabi
   protocol_type: cosmos
@@ -1290,7 +1436,6 @@ union-testnet-8:
   packages:
     - block
     - upgrade
-    - uptime
     - voteindexer
 union-testnet-9:
   chain_name: union
@@ -1302,8 +1447,19 @@ union-testnet-9:
   packages:
     - block
     - upgrade
+    - voteindexer
+union-1:
+  chain_name: union
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: ugas
+    decimal: 6
+  packages:
+    - block
+    - upgrade
     - uptime
-    - voteindexer    
+    - voteindexer
 xion-mainnet-1:
   chain_name: xion
   protocol_type: cosmos
@@ -1323,6 +1479,30 @@ xion-testnet-1:
   support_asset:
     denom: uxion
     decimal: 6
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+xrplevm_1449000-1:
+  chain_name: xrpl-evm
+  protocol_type: cosmos
+  mainnet: false
+  support_asset:
+    denom: axrp
+    decimal: 18
+  packages:
+    - block
+    - upgrade
+    - uptime
+    - voteindexer
+xrplevm_1440000-1:
+  chain_name: xrpl-evm
+  protocol_type: cosmos
+  mainnet: true
+  support_asset:
+    denom: axrp
+    decimal: 18
   packages:
     - block
     - upgrade

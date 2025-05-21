@@ -1,35 +1,17 @@
 package indexer
 
 import (
-	"time"
-
 	"github.com/cosmostation/cvms/internal/common"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/cosmostation/cvms/internal/common/api"
 )
 
-func (idx *FinalityProviderIndexer) initLabelsAndMetrics() {
-	indexPointerBlockHeightMetric := idx.Factory.NewGauge(prometheus.GaugeOpts{
-		Namespace:   common.Namespace,
-		Subsystem:   subsystem,
-		Name:        common.IndexPointerBlockHeightMetricName,
-		ConstLabels: idx.PackageLabels,
-	})
-
-	latestBlockHeightMetric := idx.Factory.NewGauge(prometheus.GaugeOpts{
-		Namespace:   common.Namespace,
-		Subsystem:   subsystem,
-		Name:        common.LatestBlockHeightMetricName,
-		ConstLabels: idx.PackageLabels,
-	})
-
-	indexPointerBlockHeightMetric.Set(0)
-	idx.MetricsMap[common.IndexPointerBlockHeightMetricName] = indexPointerBlockHeightMetric
-
-	latestBlockHeightMetric.Set(0)
-	idx.MetricsMap[common.LatestBlockHeightMetricName] = latestBlockHeightMetric
-}
-
-func (idx *FinalityProviderIndexer) updatePrometheusMetrics(indexPointer int64, indexPointerTimestamp time.Time) {
-	idx.MetricsMap[common.IndexPointerBlockHeightMetricName].Set(float64(indexPointer))
-	idx.Debugf("update prometheus metrics %d height", indexPointer)
+func (idx *FinalityProviderIndexer) updateRootMetrics(indexPointer int64) {
+	common.IndexPointer.With(idx.RootLabels).Set(float64(indexPointer))
+	_, timestamp, _, _, _, _, err := api.GetBlock(idx.CommonClient, indexPointer)
+	if err != nil {
+		idx.Errorf("failed to get block %d: %s", indexPointer, err)
+		return
+	}
+	common.IndexPointerTimestamp.With(idx.RootLabels).Set((float64(timestamp.Unix())))
+	idx.Debugf("update prometheus metrics %d epoch", indexPointer)
 }

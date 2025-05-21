@@ -6,16 +6,14 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/cosmostation/cvms/internal/common"
+	commonapi "github.com/cosmostation/cvms/internal/common/api"
+	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
 	"github.com/cosmostation/cvms/internal/helper"
 	"github.com/cosmostation/cvms/internal/helper/db"
 	"github.com/cosmostation/cvms/internal/helper/healthcheck"
-
-	"github.com/cosmostation/cvms/internal/common"
-	indexertypes "github.com/cosmostation/cvms/internal/common/indexer/types"
 	"github.com/cosmostation/cvms/internal/packages/babylon/finality-provider/repository"
 )
-
-var subsystem = "babylon_finality_provider_vote"
 
 type FinalityProviderIndexer struct {
 	*common.Indexer
@@ -66,20 +64,29 @@ func (idx *FinalityProviderIndexer) Start() error {
 	idx.Infof("loaded index pointer(last saved height): %d", initIndexPointer.Pointer)
 	idx.Infof("initial vim length: %d for %s chain", len(idx.Vim), idx.ChainID)
 
-	// init indexer metrics
-	idx.initLabelsAndMetrics()
 	// go fetch new height in loop, it must be after init metrics
 	go idx.FetchLatestHeight()
+
+	// set activation height
+	_, _, activationHeight, err := commonapi.GetBabylonFinalityProviderParams(idx.CommonClient)
+	if err != nil {
+		return errors.Wrap(err, "failed to get babylon finality provider params to check activation height")
+	}
+
+	if activationHeight > idx.Lh.LatestHeight || activationHeight > initIndexPointer.Pointer {
+		idx.Infof("activation height is %d, so that this package will sleep until the activation height", activationHeight)
+		err := idx.repo.UpdateIndexPointer(repository.IndexName, idx.ChainID, activationHeight)
+		if err != nil {
+			return errors.Wrap(err, "failed to update index pointer")
+		}
+
+		idx.Infof("set activation height %d in the database", activationHeight)
+		initIndexPointer.Pointer = activationHeight
+		idx.Infof("updated index pointer: %d", initIndexPointer.Pointer)
+	}
+
 	// loop
 	go idx.Loop(initIndexPointer.Pointer)
-	// loop update recent miss counter metrics
-	// go func() {
-	// 	for {
-	// 		idx.Infoln("update recent miss counter metrics and sleep 5s sec...")
-	// 		idx.updateRecentMissCounterMetric()
-	// 		time.Sleep(time.Second * 5)
-	// 	}
-	// }()
 	// loop partion table time retention by env parameter
 	go func() {
 		if idx.RetentionPeriod == db.PersistenceMode {

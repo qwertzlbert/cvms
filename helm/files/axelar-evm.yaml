@@ -7,4 +7,4 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'Axelar EVM Maintainer for `{{ $labels.evm_chain }}` is inactive in {{ $labels.chain_id }}'
+          summary: 'Axelar EVM Maintainer for {{ $labels.evm_chain }} is inactive in {{ $labels.chain_id }}'
