@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -14,11 +15,6 @@ const (
 	//RPC event type name
 	BabylonCovenantSignatureReceivedEventType = "babylon.btcstaking.v1.EventCovenantSignatureReceived"
 	BabylonBtcDelegationCreatedEventType      = "babylon.btcstaking.v1.EventBTCDelegationCreated"
-
-	//Babylon official remote assets
-	//https://github.com/babylonlabs-io/networks
-	BabylonCovenantCommitteeMonikerFromMainnet = "https://github.com/babylonlabs-io/networks/raw/refs/heads/main/bbn-1/covenant-committee.json"
-	BabylonCovenantCommitteeMonikerFromTestnet = "https://github.com/babylonlabs-io/networks/raw/refs/heads/main/bbn-test-5/covenant-committee.json"
 )
 
 var (
@@ -27,14 +23,6 @@ var (
 		return fmt.Sprintf("/cosmos/tx/v1beta1/txs/block/%d?pagination.limit=1", blockHeight)
 	}
 )
-
-// Struct for mapping names from the Babylon official covenant committee list.
-type CovenantCommitteeListFromRemoteRepo struct {
-	CovenantCommittee []struct {
-		Name string `json:"name"`
-		Pk   string `json:"pk"`
-	} `json:"covenant_committee"`
-}
 
 type MsgCovenantSignature struct {
 	Type                    string   `json:"@type"`
@@ -166,4 +154,25 @@ type CovenantSignature struct {
 	BTCStakingTxHash           string
 	CovenantUnbondingSignature string
 	Timestamp                  time.Time
+}
+
+// TODO: I think this types should move into common cosmos types
+type CosmosTx struct {
+	Body struct {
+		Messages []json.RawMessage `json:"messages"`
+	} `json:"body"`
+	AuthInfo   interface{} `json:"-"`
+	Signatures []string    `json:"-"`
+}
+
+type BlockTxsResponse struct {
+	Txs   []CosmosTx `json:"txs"`
+	Block struct {
+		Header struct {
+			ChainID         string    `json:"chain_id"`
+			Height          string    `json:"height"`
+			Time            time.Time `json:"time"`
+			ProposerAddress string    `json:"proposer_address"`
+		} `json:"header"`
+	} `json:"block"`
 }

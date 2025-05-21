@@ -9,6 +9,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// metrics name for indexer
+const (
+	IndexPointerEpochMetricName          = "latest_index_pointer_epoch"
+	IndexPointerBlockHeightMetricName    = "latest_index_pointer_block_height"
+	IndexPointerBlockTimestampMetricName = "latest_index_pointer_block_timestamp"
+	LatestBlockHeightMetricName          = "latest_block_height"
+	RecentMissCounterMetricName          = "recent_miss_counter"
+	CovenantSigCountMetricName           = "covenant_sigs_count"
+	BtcDelegationCountTotalMetricName    = "btc_delegation_count_total"
+)
+
 type Indexer struct {
 	CommonApp
 	ChainName    string
@@ -107,7 +118,7 @@ func (indexer *Indexer) FetchLatestHeight() {
 		}
 
 		// if loop is true, update metrics
-		// indexer.MetricsMap[LatestBlockHeightMetricName].Set(float64(indexer.Lh.LatestHeight))
+		indexer.MetricsMap[LatestBlockHeightMetricName].Set(float64(indexer.Lh.LatestHeight))
 		indexer.Debugf("update prometheus metrics %d height", indexer.Lh.LatestHeight)
 	}
 }

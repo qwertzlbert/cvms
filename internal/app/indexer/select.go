@@ -8,17 +8,13 @@ import (
 	// axelar specific
 	aavindexer "github.com/cosmostation/cvms/internal/packages/axelar/amplifier-verifier/indexer"
 
-	// babylon specific
+	// babylon specfic
 	btclcindexer "github.com/cosmostation/cvms/internal/packages/babylon/btc-lightclient/indexer"
 	bcindexer "github.com/cosmostation/cvms/internal/packages/babylon/checkpoint/indexer"
 	bcsindexer "github.com/cosmostation/cvms/internal/packages/babylon/covenant-committee/indexer"
 	bfpindexer "github.com/cosmostation/cvms/internal/packages/babylon/finality-provider/indexer"
 
-	// gnoland specific
-	gvtindexer "github.com/cosmostation/cvms/internal/packages/gnoland/voteindexer"
-
 	// cosmos native
-	bdaindexer "github.com/cosmostation/cvms/internal/packages/block-data-analytics/indexer"
 	veindexer "github.com/cosmostation/cvms/internal/packages/consensus/veindexer/indexer"
 	voteindexer "github.com/cosmostation/cvms/internal/packages/consensus/voteindexer/indexer"
 	"github.com/pkg/errors"
@@ -32,6 +28,7 @@ func selectPackage(
 	isConsumer bool,
 	cc config.ChainConfig, monikers []string,
 ) error {
+
 	// Add validation logic on each provided URL
 	validAPIs := make([]string, 0)
 	validRPCs := make([]string, 0)
@@ -129,10 +126,6 @@ func selectPackage(
 		}
 		return fpindexer.Start()
 	case pkg == "babylon-btc-lightclient":
-		if m == common.VALIDATOR {
-			l.Infof("%s don't need to enable this package. CVMS will ignore %s package", m, pkg)
-			return nil
-		}
 		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {
@@ -145,10 +138,6 @@ func selectPackage(
 		}
 		return btclcindexer.Start()
 	case pkg == "babylon-covenant-committee":
-		if m == common.VALIDATOR {
-			l.Infof("%s don't need to enable this package. CVMS will ignore %s package", m, pkg)
-			return nil
-		}
 		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
 		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
 		if err != nil {
@@ -172,38 +161,6 @@ func selectPackage(
 			return errors.Wrap(err, common.ErrFailedToBuildPackager)
 		}
 		return aavindexer.Start()
-	case pkg == "block-data-analytics":
-		if m == common.VALIDATOR {
-			l.Infof("%s don't need to enable this package. CVMS will ignore %s package", m, pkg)
-			return nil
-		}
-		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true, APIs: validAPIs, CheckAPI: true}
-		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
-		if err != nil {
-			return errors.Wrap(err, common.ErrFailedToBuildPackager)
-		}
-		p.SetIndexerDB(idb)
-		bdaindexer, err := bdaindexer.NewBDAIndexer(*p)
-		if err != nil {
-			return errors.Wrap(err, common.ErrFailedToBuildPackager)
-		}
-		return bdaindexer.Start()
-	case pkg == "gnoland-voteindexer":
-		if m == common.VALIDATOR {
-			l.Infof("%s don't need to enable this package. CVMS will ignore %s package", m, pkg)
-			return nil
-		}
-		endpoints := common.Endpoints{RPCs: validRPCs, CheckRPC: true}
-		p, err := common.NewPackager(m, f, l, mainnet, chainID, chainName, pkg, protocolType, cc, endpoints, monikers...)
-		if err != nil {
-			return errors.Wrap(err, common.ErrFailedToBuildPackager)
-		}
-		p.SetIndexerDB(idb)
-		gvtindexer, err := gvtindexer.NewVoteIndexer(*p)
-		if err != nil {
-			return errors.Wrap(err, common.ErrFailedToBuildPackager)
-		}
-		return gvtindexer.Start()
 	}
 
 	return common.ErrUnSupportedPackage

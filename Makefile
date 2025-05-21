@@ -27,6 +27,11 @@ version:
 	@echo "VERSION: ${VERSION}"
 	@echo "COMMIT: ${COMMIT}"	
 
+# Reset indexer db 
+reset-db:
+	@docker compose --profile indexer-db down -v
+	@docker compose --profile indexer-db up -d
+
 # Sort chain_id in support_chains.yaml
 sort_support_chains:
 	@yq eval 'sort_keys(.)' -i ./docker/cvms/support_chains.yaml
@@ -58,14 +63,6 @@ clean:
 
 PHONY: build install run clean
 
-###############################################################################
-###                                  Docker                                 ###
-###############################################################################
-
-## Reset indexer db 
-reset-db:
-	@echo "-> Re-up postgres container for reset"
-	@docker compose down -v postgres && docker compose up -d postgres
 
 ###############################################################################
 ###                                  Migration                              ###
@@ -91,18 +88,18 @@ start-indexer:
 
 ## start exporter application for specific package 
 
-
-PACKAGE ?= voteindexer
-
+SPECIFIC_PACKAGE ?= block
 start-exporter-specific-package:
 	@echo "-> Start CVMS in script mode, you can use this task adding a argument like 'make start-specific-package SPECIFIC_PACKAGE=eventnonce'"
-	@echo "Selected Package: ${PACKAGE}"
-	@go run ./cmd/cvms start exporter --config ./config.yaml --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --package-filter ${PACKAGE} --port 9200
+	@echo "Selected Package: ${SPECIFIC_PACKAGE}"
+	@go run ./cmd/cvms start exporter --config ./config.yaml --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --package-filter ${SPECIFIC_PACKAGE} --port 9200
 
+### Test runner
+SPECIFIC_PACKAGE ?= voteindexer
 start-indexer-specific-package:
 	@echo "-> Start CVMS in script mode, you can use this task adding a argument like 'make start-specific-package SPECIFIC_PACKAGE=voteindexer'"
-	@echo "Selected Package: ${PACKAGE}"
-	@go run ./cmd/cvms start indexer --config ./config.yaml --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --package-filter ${PACKAGE} --port 9300
+	@echo "Selected Package: ${SPECIFIC_PACKAGE}"
+	@go run ./cmd/cvms start indexer --config ./config.yaml --log-color-disable ${LOG_COLOR_DISABLE} --log-level ${LOG_LEVEL} --package-filter ${SPECIFIC_PACKAGE} --port 9300
 
 ###############################################################################
 ###                             Test Packages                               ###

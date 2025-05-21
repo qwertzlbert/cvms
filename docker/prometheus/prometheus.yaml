@@ -15,7 +15,6 @@ alerting:
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
   - /etc/prometheus/rules/*.yaml
-  - /etc/prometheus/custom_rules/*.yaml
 
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
@@ -39,18 +38,3 @@ scrape_configs:
     metrics_path: '/metrics'
     static_configs:
       - targets: ['cvms-exporter-db:9090']      
-
-  - job_name: 'cadvisor'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['cvms-cadvisor:8080']      
-
-  - job_name: 'loki'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['loki:3100']      
-
-  - job_name: 'promtail'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['promtail:9080']      

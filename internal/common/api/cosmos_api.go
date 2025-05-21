@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -39,7 +38,7 @@ func GetStatus(c common.CommonClient) (
 	return latestBlockHeight, latestBlockTimestamp, nil
 }
 
-//nolint:dupl // cosmos block is default logic
+// query a new block to find missed validators index
 func GetBlock(c common.CommonClient, height int64) (
 	/* block height */ int64,
 	/* block timestamp */ time.Time,
@@ -272,24 +271,24 @@ func GetConsumerChainHRP(c common.CommonClient) (string, error) {
 func GetBlockResults(c common.CommonClient, height int64) (
 	/* txs events */ []types.BlockEvent,
 	/* block events */ []types.BlockEvent,
-	/* consensus param */ types.CosmosBlockData,
 	/* unexpected error */ error,
 ) {
+
 	// init context
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
 	resp, err := c.RPCClient.Get(ctx, types.CosmosBlockResultsQueryPath(height))
 	if err != nil {
-		return nil, nil, types.CosmosBlockData{}, errors.Errorf("rpc call is failed from %s: %s", types.CosmosBlockResultsQueryPath(height), err)
+		return nil, nil, errors.Errorf("rpc call is failed from %s: %s", types.CosmosBlockResultsQueryPath(height), err)
 	}
 
-	txsEvents, blockEvents, blockData, err := parser.CosmosBlockResultsParser(resp)
+	txsEvents, blockEvents, err := parser.CosmosBlockResultsParser(resp)
 	if err != nil {
-		return nil, nil, types.CosmosBlockData{}, errors.WithStack(err)
+		return nil, nil, errors.WithStack(err)
 	}
 
-	return txsEvents, blockEvents, blockData, nil
+	return txsEvents, blockEvents, nil
 }
 
 // query block and txs data by using cosmos api endpoint
@@ -325,26 +324,4 @@ func GetBlockAndTxs(c common.CommonClient, height int64) (
 	}
 
 	return blockHeight, result.Block.Header.Time, result.Txs, nil
-}
-
-func GetCosmosConsensusParams(c common.CommonClient) (float64, float64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
-	defer cancel()
-
-	requester := c.RPCClient.R().SetContext(ctx)
-	resp, err := requester.Get(types.CosmosConsensusParamsQueryPath)
-	if err != nil {
-		return 0, 0, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return 0, 0, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
-	}
-
-	maxBytes, maxGas, err := parser.CosmosConsensusmParamsParser(resp.Body())
-	if err != nil {
-		return 0, 0, errors.WithStack(err)
-	}
-
-	return maxBytes, maxGas, nil
 }
