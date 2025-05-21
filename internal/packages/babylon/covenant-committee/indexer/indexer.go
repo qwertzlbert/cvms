@@ -2,6 +2,9 @@ package indexer
 
 import (
 	"database/sql"
+	"encoding/json"
+	"io"
+	"net/http"
 	"time"
 
 	"github.com/cosmostation/cvms/internal/common"
@@ -65,30 +68,19 @@ func (idx *CovenantSignatureIndexer) Start() error {
 		return errors.Wrap(err, "failed to get last index pointer")
 	}
 
+	newCovenantCommitteeInfoList, err := idx.getNewCovenantCommitteeInfoList()
+	if err != nil {
+		return errors.Wrap(err, "failed to get new covenant committee info list")
+	}
+
+	err = idx.csRepo.UpsertCovenantCommitteeInfoList(newCovenantCommitteeInfoList)
+	if err != nil {
+		return errors.Wrap(err, "failed to upsert covenant committee list")
+	}
+
 	err = idx.FetchValidatorInfoList()
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch covenant committee list")
-	}
-
-	// initialize babylon covenant committee
-	if len(idx.covenantCommitteeMap) <= 0 {
-		newCovenantCommitteeInfoList := []model.CovenantCommitteeInfo{}
-		covenantCommittee, err := commonapi.GetBalbylonCovenantCommiteeParams(idx.CommonClient)
-		if err != nil {
-			return errors.Wrap(err, "failed to get covenant committee params")
-		}
-		for _, committee := range covenantCommittee {
-			newCovenantCommitteeInfoList = append(newCovenantCommitteeInfoList, model.CovenantCommitteeInfo{
-				ChainInfoID:   idx.ChainInfoID,
-				CovenantBtcPk: committee,
-			})
-		}
-
-		idx.csRepo.InsertCovenantCommitteeInfoList(newCovenantCommitteeInfoList)
-		err = idx.FetchValidatorInfoList()
-		if err != nil {
-			return errors.Wrap(err, "failed to fetch covenant committee list")
-		}
 	}
 
 	idx.Infof("loaded last index pointer: %d", initIndexPointer.Pointer)
@@ -223,4 +215,73 @@ func (idx *CovenantSignatureIndexer) FetchValidatorInfoList() error {
 	}
 
 	return nil
+}
+
+var mainnetDefaultMonikers = map[string]string{
+	"d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa": "Babylon Labs - Signer 0",
+	"4b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa": "Babylon Labs - Signer 1",
+	"23b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1": "Babylon Labs - Signer 2",
+	"d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae": "CoinSummer Labs",
+	"f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0": "RockX",
+	"8242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7": "AltLayer",
+	"cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204": "Zellic",
+	"e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c": "Informal Systems",
+	"de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c": "Cubist",
+}
+
+func (idx *CovenantSignatureIndexer) getCovenantComitteeMoniker(mainnet bool) map[string]string {
+	url := BabylonCovenantCommitteeMonikerFromTestnet
+	if mainnet {
+		url = BabylonCovenantCommitteeMonikerFromMainnet
+	}
+
+	resp, err := http.Get(url)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		idx.Warnln("failed to fetch remote covenant committee moniker, using default monikers")
+		if mainnet {
+			return mainnetDefaultMonikers
+		}
+		return map[string]string{}
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		idx.Errorf("failed to read response body for covenant committee moniker: %s", err)
+		return map[string]string{}
+	}
+
+	var remoteCCMonikerMap map[string]string
+	if err := json.Unmarshal(body, &remoteCCMonikerMap); err != nil {
+		idx.Errorf("failed to unmarshal covenant committee moniker JSON: %s", err)
+		return map[string]string{}
+	}
+
+	return remoteCCMonikerMap
+}
+
+func (idx *CovenantSignatureIndexer) getNewCovenantCommitteeInfoList() ([]model.CovenantCommitteeInfo, error) {
+	// initialize babylon covenant committee
+	newCovenantCommitteeInfoList := []model.CovenantCommitteeInfo{}
+	covenantCommittee, err := commonapi.GetBalbylonCovenantCommiteeParams(idx.CommonClient)
+	if err != nil {
+		return newCovenantCommitteeInfoList, errors.Wrap(err, "failed to get onchain covenant committee params")
+	}
+	// request remote covenant mapping name
+	remoteCCMonikerMap := idx.getCovenantComitteeMoniker(idx.Mainnet)
+
+	for _, pk := range covenantCommittee {
+		moniker := "Unknown"
+		if value, ok := remoteCCMonikerMap[pk]; ok {
+			moniker = value
+		}
+
+		newCovenantCommitteeInfoList = append(newCovenantCommitteeInfoList, model.CovenantCommitteeInfo{
+			ChainInfoID:   idx.ChainInfoID,
+			CovenantBtcPk: pk,
+			Moniker:       moniker,
+		})
+	}
+
+	return newCovenantCommitteeInfoList, nil
 }

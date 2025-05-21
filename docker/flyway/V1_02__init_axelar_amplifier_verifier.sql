@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS "public"."axelar_amplifier_verifier" (
         "status" SMALLINT NOT NUll,
         PRIMARY KEY ("id", "chain_info_id"),
         CONSTRAINT fk_chain_info_id FOREIGN KEY (chain_info_id) REFERENCES meta.chain_info (id) ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT fk_verifier_id FOREIGN KEY (verifier_id, chain_info_id) REFERENCES meta.verifier_info (id, chain_info_id)
+        CONSTRAINT fk_verifier_id FOREIGN KEY (verifier_id, chain_info_id) REFERENCES meta.verifier_info (id, chain_info_id),
+        CONSTRAINT uniq_verifier_id_by_poll UNIQUE ("chain_info_id","chain_and_poll_id","verifier_id")
     )
 PARTITION BY
     LIST ("chain_info_id");

@@ -10,10 +10,14 @@ type IMetaRepository interface {
 	IFinalityProviderInfoRepository
 	ICovenantCommitteeInfoRepository
 	IVerifierInfoRepository
+	IVigilanteInfoRepository
+	IMessageTypeRepository
 
 	// common sql interface for partition tables
 	CreatePartitionTable(IndexName, chainID string) error
 	InitPartitionTablesByChainInfoID(IndexName, chainID string, latestHeight int64) error
+	CreatePartitionTableInMeta(tableName, chainID string) error
+	UpdateIndexPointer(IndexName, chainID string, indexPointerHeight int64) error
 }
 
 // interface for about meta.chain_info table
@@ -49,7 +53,7 @@ type IFinalityProviderInfoRepository interface {
 type ICovenantCommitteeInfoRepository interface {
 	CreateCovenantCommitteeInfoPartitionTableByChainID(chainID string) error
 	GetCovenantCommitteeInfoListByChainInfoID(chainInfoID int64) (fpInfoList []model.CovenantCommitteeInfo, err error)
-	InsertCovenantCommitteeInfoList([]model.CovenantCommitteeInfo) error
+	UpsertCovenantCommitteeInfoList([]model.CovenantCommitteeInfo) error
 	GetCovenantCommitteeInfoListByMonikers(chainInfoID int64, monikers []string) ([]model.CovenantCommitteeInfo, error)
 }
 
@@ -59,4 +63,17 @@ type IVerifierInfoRepository interface {
 	GetVerifierInfoListByChainInfoID(chainInfoID int64) (verifierInfoList []model.VerifierInfo, err error)
 	InsertVerifierInfoList(verifierInfoList []model.VerifierInfo) error
 	GetVerifierInfoListByMonikers(chainInfoID int64, monikers []string) ([]model.VerifierInfo, error)
+}
+
+// interface for about meta.verifier_info table
+type IVigilanteInfoRepository interface {
+	CreateVigilanteInfoPartitionTableByChainID(chainID string) error
+	GetVigilanteInfoListByChainInfoID(chainInfoID int64) (verifierInfoList []model.VigilanteInfo, err error)
+	InsertVigilanteInfoList(verifierInfoList []model.VigilanteInfo) error
+	GetVigilanteInfoListByMonikers(chainInfoID int64, monikers []string) ([]model.VigilanteInfo, error)
+}
+
+type IMessageTypeRepository interface {
+	GetMessageTypeListByChainInfoID(chainInfoID int64) (messageTypeList []model.MessageType, err error)
+	InsertMessageTypeList(messageTypeList []model.MessageType) error
 }

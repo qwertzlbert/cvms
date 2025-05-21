@@ -6,33 +6,46 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func (idx *BTCLightClientIndexer) initLabelsAndMetrics() {
-	epochMetric := idx.Factory.NewGauge(prometheus.GaugeOpts{
-		Namespace:   common.Namespace,
-		Subsystem:   subsystem,
-		Name:        common.IndexPointerEpochMetricName,
-		ConstLabels: idx.PackageLabels,
-	})
-	idx.MetricsMap[common.IndexPointerEpochMetricName] = epochMetric
+const (
+	EventCountMetricName = "event_count"
+	BTCHeightMetricName  = "btc_height"
+	EventTypeLabel       = "event_type"
+)
 
-	timestampMetric := idx.Factory.NewGauge(prometheus.GaugeOpts{
+func (idx *BTCLightClientIndexer) initMetrics() {
+	idx.MetricsCountVecMap[EventCountMetricName] = idx.Factory.NewCounterVec(prometheus.CounterOpts{
 		Namespace:   common.Namespace,
 		Subsystem:   subsystem,
-		Name:        common.IndexPointerBlockTimestampMetricName,
+		Name:        EventCountMetricName,
 		ConstLabels: idx.PackageLabels,
+		Help:        "Count BTC Light Client events by event type",
+	}, []string{EventTypeLabel})
+
+	idx.MetricsMap[BTCHeightMetricName] = idx.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   subsystem,
+		Name:        BTCHeightMetricName,
+		ConstLabels: idx.PackageLabels,
+		Help:        "The BTC Light Client height",
 	})
-	idx.MetricsMap[common.IndexPointerBlockTimestampMetricName] = timestampMetric
 }
 
-func (idx *BTCLightClientIndexer) updatePrometheusMetrics(indexPointer int64) {
-	idx.MetricsMap[common.IndexPointerEpochMetricName].Set(float64(indexPointer))
+func (idx *BTCLightClientIndexer) updateRootMetrics(indexPointer int64) {
+	// update index pointer
+	common.IndexPointer.With(idx.RootLabels).Set(float64(indexPointer))
+
+	// update index pointer timestamp
 	_, timestamp, _, _, _, _, err := api.GetBlock(idx.CommonClient, indexPointer)
 	if err != nil {
-		idx.Errorf("failed to get block %d: %s", indexPointer, err)
+		idx.Warnf("failed to update index pointer timestamp metric: %s", err)
 		return
 	}
-	idx.MetricsMap[common.IndexPointerBlockTimestampMetricName].Set((float64(timestamp.Unix())))
+	common.IndexPointerTimestamp.With(idx.RootLabels).Set((float64(timestamp.Unix())))
 	idx.Debugf("update prometheus metrics %d height", indexPointer)
 }
 
-// btc light client height
+func (idx *BTCLightClientIndexer) updateIndexerMetrics(forwardCnt, backCnt, lastBTCHeight int64) {
+	idx.MetricsCountVecMap[EventCountMetricName].With(prometheus.Labels{EventTypeLabel: "BTCRollForward"}).Add(float64(forwardCnt))
+	idx.MetricsCountVecMap[EventCountMetricName].With(prometheus.Labels{EventTypeLabel: "BTCRollBack"}).Add(float64(backCnt))
+	idx.MetricsMap[BTCHeightMetricName].Set(float64(lastBTCHeight))
+}
