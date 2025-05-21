@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"net/http"
 	"strings"
 	"sync"
 
@@ -46,22 +45,18 @@ func GetAxelarHeartbeatsStatus(
 	defer cancel()
 
 	// create requester
-	requester := exporter.APIClient.R().SetContext(ctx)
+	requester := exporter.APIClient
 
 	// get on-chain validators
-	resp, err := requester.Get(types.CommonValidatorQueryPath)
+	resp, err := requester.Get(ctx, types.CommonValidatorQueryPath)
 	if err != nil {
 		exporter.Errorf("api error: %s", err)
 		return types.CommonAxelarHeartbeats{}, common.ErrFailedHttpRequest
 	}
-	if resp.StatusCode() != http.StatusOK {
-		exporter.Errorf("api error: got %d code from %s", resp.StatusCode(), resp.Request.URL)
-		return types.CommonAxelarHeartbeats{}, common.ErrGotStrangeStatusCode
-	}
 
 	// json unmarsharling received validators data
 	var validators types.CommonValidatorsQueryResponse
-	if err := json.Unmarshal(resp.Body(), &validators); err != nil {
+	if err := json.Unmarshal(resp, &validators); err != nil {
 		exporter.Errorf("api error: %s", err)
 		return types.CommonAxelarHeartbeats{}, common.ErrFailedJsonUnmarshal
 	}
@@ -130,9 +125,9 @@ func findHeartbeats(
 			defer wg.Done()
 
 			// Find Broadcastor address
-			rpcRequester := exporter.RPCClient.R().SetContext(ctx)
+			rpcRequester := exporter.RPCClient
 			abciQueryPath := strings.Replace(types.AxelarProxyResisterQueryPath, "{validator_operator_address}", operatorAddr, -1)
-			resp, err := rpcRequester.Get(abciQueryPath)
+			resp, err := rpcRequester.Get(ctx, abciQueryPath)
 			if err != nil {
 				exporter.Errorf("API error: %s", err)
 				*ch <- helper.Result{Item: nil, Success: false}
@@ -140,7 +135,7 @@ func findHeartbeats(
 			}
 
 			var AxelarProxyResisterResponse types.AxelarProxyResisterResponse
-			if err := json.Unmarshal(resp.Body(), &AxelarProxyResisterResponse); err != nil {
+			if err := json.Unmarshal(resp, &AxelarProxyResisterResponse); err != nil {
 				exporter.Errorf("JSON unmarshal error: %s", err)
 				*ch <- helper.Result{Item: nil, Success: false}
 				return
