@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -284,8 +283,8 @@ func GetBlockResults(c common.CommonClient, height int64) (
 	if err != nil {
 		return nil, nil, types.CosmosBlockData{}, errors.Errorf("rpc call is failed from %s: %s", types.CosmosBlockResultsQueryPath(height), err)
 	}
-
 	txsEvents, blockEvents, blockData, err := parser.CosmosBlockResultsParser(resp)
+
 	if err != nil {
 		return nil, nil, types.CosmosBlockData{}, errors.WithStack(err)
 	}

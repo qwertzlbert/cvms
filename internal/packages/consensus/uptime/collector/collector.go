@@ -26,7 +26,6 @@ const (
 	StakedTokensMetricName       = "staked_tokens_total"
 	SignedBlocksWindowMetricName = "signed_blocks_window"
 	MinSignedPerWindowMetricName = "min_signed_per_window"
-
 	METRIC_NAME_VP                    = "validator_voting_power"
 	DowntimeJailDurationMetricName    = "downtime_jail_duration"
 	SlashFractionDowntimeMetricName   = "slash_fraction_downtime"
@@ -267,7 +266,6 @@ func loop(exporter *common.Exporter, p common.Packager) {
 						common.MonikerLabel:          item.Moniker,
 					}).
 					Set(item.VotingPower)
-
 				stakedTokensMetric.
 					With(prometheus.Labels{
 						common.ValidatorAddressLabel: item.ValidatorOperatorAddress,

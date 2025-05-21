@@ -99,6 +99,7 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 		consensusAddress := pubkeysMap[item.ConsensusPubkey.Key]
 		queryPath := queryPathFunction(consensusAddress)
 		vp := vpMap[item.ConsensusPubkey.Key]
+
 		validatorRank := idx + 1 // need to add 1 for human-readable rank as index starts from 0
 
 		stakedTokens, err := strconv.ParseFloat(item.Tokens, 64)
@@ -123,7 +124,9 @@ func getValidatorUptimeStatus(c common.CommonApp, chainName string, validators [
 					ch <- helper.Result{Item: nil, Success: false}
 					return
 				}
-				c.Errorf("errors: %s", err)
+
+				// c.Errorf("errors: %s", err)
+
 				ch <- helper.Result{Item: nil, Success: false}
 				return
 			}

@@ -82,7 +82,9 @@ func (idx *CheckpointIndexer) batchSync(lastIndexPointerEpoch int64) (
 		}
 
 		idx.Debugf("sync epoch: %d", epoch)
+
 		resp, err := idx.APIClient.Get(ctx, EpochQueryPath(epoch+1)) // NOTE: for finding the first block for this epoch, we should use epoch + 1
+
 		if err != nil {
 			return lastIndexPointerEpoch, errors.Wrap(err, "failed to get epoch data")
 		}
