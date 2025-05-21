@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/cosmostation/cvms/internal/common"
 	"github.com/cosmostation/cvms/internal/common/parser"
@@ -14,17 +13,14 @@ func GetCosmosConsensusParams(c common.CommonClient) (float64, float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	requester := c.RPCClient.R().SetContext(ctx)
-	resp, err := requester.Get(types.CosmosConsensusParamsQueryPath)
+	requester := c.RPCClient
+	resp, err := requester.Get(ctx, types.CosmosConsensusParamsQueryPath)
 	if err != nil {
-		return 0, 0, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
+		endpoint, _ := requester.GetEndpoint()
+		return 0, 0, errors.Errorf("rpc call is failed from %s: %s", endpoint, err)
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return 0, 0, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
-	}
-
-	maxBytes, maxGas, err := parser.CosmosConsensusmParamsParser(resp.Body())
+	maxBytes, maxGas, err := parser.CosmosConsensusmParamsParser(resp)
 	if err != nil {
 		return 0, 0, errors.WithStack(err)
 	}
