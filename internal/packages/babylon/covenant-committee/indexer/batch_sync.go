@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"fmt"
 	"time"
 
 	"sync"
@@ -24,7 +25,7 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 	/* error */ error,
 ) {
 	if lastIndexPointerHeight >= idx.Lh.LatestHeight {
-		idx.Debugf("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, idx.Lh.LatestHeight)
+		idx.Infof("current height is %d and latest height is %d both of them are same, so it'll skip the logic", lastIndexPointerHeight, idx.Lh.LatestHeight)
 		return lastIndexPointerHeight, nil
 	}
 
@@ -49,7 +50,6 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 
 	// This timestamp for metrics
 	var endBlockTimestamp time.Time
-	var isUnknownCovenantCommittee = false
 
 	_ = covenantSignatureList
 	for height := startHeight; height <= endHeight; height++ {
@@ -73,7 +73,7 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 			}
 
 		RETRY2:
-			txsEvents, _, _, err := api.GetBlockResults(idx.CommonClient, height)
+			txsEvents, _, err := api.GetBlockResults(idx.CommonClient, height)
 			if err != nil {
 				idx.Errorf("failed to get block results by rpc, %s", err)
 				helper.ExponentialBackoff(&backoffTime)
@@ -126,11 +126,6 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 						goto RETRY2
 					}
 					btcStakingTxHash, err := DecodeBTCStakingTxByHexStr(escapeHexStr)
-					if err != nil {
-						idx.Errorf("failed to decoding for staking tx, %s", err)
-						helper.ExponentialBackoff(&backoffTime)
-						goto RETRY2
-					}
 
 					btcDelegationEvents = append(btcDelegationEvents, EventBtcDelegationCreated{StakingTxHash: btcStakingTxHash})
 				}
@@ -149,11 +144,17 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 
 				newBtcDelegations = append(newBtcDelegations, newBtcDelegation)
 			}
+
+			ch1 <- helper.Result{
+				Item:    newBtcDelegations,
+				Success: true,
+			}
+
 			for _, e := range covenantSigEvents {
+				// It's not yet clear if Committee members can change dynamically, we've added some temporary code to prevent panic
 				pkID, exists := idx.covenantCommitteeMap[e.CovenantBtcPkHex]
 				if !exists {
 					idx.Errorf("Missing covenant committee entry for PK: %s", e.CovenantBtcPkHex)
-					isUnknownCovenantCommittee = true
 					continue
 				}
 
@@ -166,11 +167,6 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 				}
 
 				newBcsList = append(newBcsList, newCovenantSignature)
-			}
-
-			ch1 <- helper.Result{
-				Item:    newBtcDelegations,
-				Success: true,
 			}
 
 			ch2 <- helper.Result{
@@ -211,38 +207,24 @@ func (idx *CovenantSignatureIndexer) batchSync(lastIndexPointerHeight, newIndexP
 
 		// exit loop
 		if closedCh1 && closedCh2 {
-			idx.Debugln("All channels closed. Exiting loop.")
+			fmt.Println("All channels closed. Exiting loop.")
 			break
 		}
 	}
 
-	if isUnknownCovenantCommittee {
-		//Update new covenant committee list
-		newCovenantCommitteeInfoList, err := idx.getNewCovenantCommitteeInfoList()
-		if err != nil {
-			return lastIndexPointerHeight, errors.Wrap(err, "failed to get new covenant committee info list")
-		}
-
-		err = idx.csRepo.UpsertCovenantCommitteeInfoList(newCovenantCommitteeInfoList)
-		if err != nil {
-			return lastIndexPointerHeight, errors.Wrap(err, "failed to upsert covenant committee info list for database")
-		}
-
-		err = idx.FetchValidatorInfoList()
-		if err != nil {
-			return lastIndexPointerHeight, errors.Wrap(err, "failed to fetch covenant committe info list")
-		}
-		return lastIndexPointerHeight, errors.Wrap(err, "found an unknown Covenant Committee member. Processing with the update.")
-	}
-
-	// insert committee sig status, btc delegation status
-	err := idx.csRepo.InsertBabylonCovenantSignatureList(idx.ChainInfoID, endHeight, covenantSignatureList, btcDelegationsList)
+	// 1. Insert Babylon Btc Delegations Tx
+	err := idx.btcDelRepo.InsertBabylonBtcDelegationsList(idx.ChainInfoID, btcDelegationsList)
 	if err != nil {
 		return lastIndexPointerHeight, err
 	}
 
-	idx.updateRootMetrics(endHeight, endBlockTimestamp)
-	idx.updateIndexerMetrics(covenantSignatureList, btcDelegationsList)
+	// 2. update sig status
+	err = idx.csRepo.InsertBabylonCovenantSignatureList(idx.ChainInfoID, endHeight, covenantSignatureList)
+	if err != nil {
+		return lastIndexPointerHeight, err
+	}
+
+	idx.updatePrometheusMetrics(covenantSignatureList, btcDelegationsList, endBlockTimestamp)
 	idx.Debugf("updated babylon covenant signature in %v block", endBlockTimestamp)
 	return endHeight, nil
 }

@@ -102,7 +102,7 @@ func ExtractBabylonExtendVoteAndBlockInfo(resp []byte) (
 	return 0, time.Time{}, nil, errors.New("unexpected errors")
 }
 
-// ParseDynamicMessage dynamically parses the message based on its type.
+// parseDynamicMessage dynamically parses the message based on its type.
 func ParseDynamicMessage(message json.RawMessage, typeURL string) ([]BabylonExtendVote, error) {
 	switch typeURL {
 	case BabylonInjectedCheckpointMessageType:

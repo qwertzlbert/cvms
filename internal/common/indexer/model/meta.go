@@ -6,24 +6,6 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type VigilanteInfo struct {
-	bun.BaseModel `bun:"table:meta.vigilante_info"`
-
-	ID              int64  `bun:"id,pk,autoincrement"`
-	ChainInfoID     int64  `bun:"chain_info_id,pk,notnull"`
-	OperatorAddress string `bun:"operator_address"`
-	Moniker         string `bun:"moniker"`
-}
-
-func (vi VigilanteInfo) String() string {
-	return fmt.Sprintf("VigilanteInfo<%d %d %s %s>",
-		vi.ID,
-		vi.ChainInfoID,
-		vi.OperatorAddress,
-		vi.Moniker,
-	)
-}
-
 type VerifierInfo struct {
 	bun.BaseModel `bun:"table:meta.verifier_info"`
 
@@ -46,16 +28,14 @@ type CovenantCommitteeInfo struct {
 	bun.BaseModel `bun:"table:meta.covenant_committee_info"`
 	ID            int64  `bun:"id,pk,autoincrement"`
 	ChainInfoID   int64  `bun:"chain_info_id,pk,notnull"`
-	Moniker       string `bun:"moniker,notnull"`
 	CovenantBtcPk string `bun:"covenant_btc_pk"`
 }
 
 func (cci CovenantCommitteeInfo) String() string {
-	return fmt.Sprintf("CovenantCommitteeInfo<%d %d %s %s>",
+	return fmt.Sprintf("CovenantCommitteeInfo<%d %d %s>",
 		cci.ID,
 		cci.ChainInfoID,
 		cci.CovenantBtcPk,
-		cci.Moniker,
 	)
 }
 
@@ -132,12 +112,4 @@ func (ip IndexPointer) String() string {
 		ip.IndexName,
 		ip.Pointer,
 	)
-}
-
-type MessageType struct {
-	bun.BaseModel `bun:"table:meta.message_type"`
-
-	ID          int64  `bun:"id,pk,autoincrement"`
-	ChainInfoID int64  `bun:"chain_info_id,pk,notnull"`
-	MessageType string `bun:"message_type,unique:uniq_message_type_by_chain"`
 }

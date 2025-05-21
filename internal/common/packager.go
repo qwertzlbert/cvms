@@ -13,7 +13,6 @@ var (
 		// CometBFT
 		"voteindexer",
 		"veindexer",
-		"block-data-analytics",
 
 		// Babylon
 		"babylon-checkpoint",
@@ -30,13 +29,13 @@ var (
 		"uptime",
 
 		// Defaults
-		"block", "balance", "upgrade", "block-data-analytics",
+		"block", "balance", "upgrade",
 
 		// Duties
-		"axelar-vald-heartbeats", "axelar-evm", "eventnonce", "oracle", "yoda",
+		"axelar-evm", "eventnonce", "oracle", "yoda",
 
 		// Babylon
-		"babylon-finality-provider-uptime", "babylon-btc-delegations",
+		"babylon-finality-provider-uptime",
 	}
 )
 

@@ -44,13 +44,3 @@ type TotalBabylonVoteExtensionByMoniker struct {
 	CommitCount  int32  `bun:"commit"`
 	NilCount     int32  `bun:"nil"`
 }
-
-func (model TotalBabylonVoteExtensionByMoniker) String() string {
-	return fmt.Sprintf("Current Babylon BLS Vote<moniker:%s, unkonw: %d, absent: %d, commit: %d, nil: %d>",
-		model.Moniker,
-		model.UnknownCount,
-		model.AbsentCount,
-		model.CommitCount,
-		model.NilCount,
-	)
-}
