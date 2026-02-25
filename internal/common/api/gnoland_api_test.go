@@ -13,7 +13,10 @@ import (
 
 func TestGetGnolandBFTValidators(t *testing.T) {
 	rpcEndpoint := os.Getenv("TEST_BLOCK_GNOLAND_HOST_ADDRESS")
-	commonApp := common.NewCommonApp(p)
+	if rpcEndpoint == "" {
+		t.Skip("TEST_BLOCK_GNOLAND_HOST_ADDRESS not set (requires .env.test)")
+	}
+	commonApp := common.NewCommonApp(pGnoland)
 	commonApp.SetRPCEndPoint(rpcEndpoint)
 
 	lh, _, err := GetStatus(commonApp.CommonClient)
@@ -32,7 +35,10 @@ func TestGetGnolandBFTValidators(t *testing.T) {
 
 func TestGetGnolandBlock(t *testing.T) {
 	rpcEndpoint := os.Getenv("TEST_BLOCK_GNOLAND_HOST_ADDRESS")
-	commonApp := common.NewCommonApp(p)
+	if rpcEndpoint == "" {
+		t.Skip("TEST_BLOCK_GNOLAND_HOST_ADDRESS not set (requires .env.test)")
+	}
+	commonApp := common.NewCommonApp(pGnoland)
 	commonApp.SetRPCEndPoint(rpcEndpoint)
 
 	lh, _, err := GetStatus(commonApp.CommonClient)
@@ -56,7 +62,10 @@ func TestGetGnolandBlock(t *testing.T) {
 
 func TestGetGnolandSysValidators(t *testing.T) {
 	rpcEndpoint := os.Getenv("TEST_BLOCK_GNOLAND_HOST_ADDRESS")
-	commonApp := common.NewCommonApp(p)
+	if rpcEndpoint == "" {
+		t.Skip("TEST_BLOCK_GNOLAND_HOST_ADDRESS not set (requires .env.test)")
+	}
+	commonApp := common.NewCommonApp(pGnoland)
 	commonApp.SetRPCEndPoint(rpcEndpoint)
 
 	gnolandSysValidators, err := GetGnolandSysValidators(commonApp.CommonClient)
@@ -110,7 +119,10 @@ func TestGnolandValidatorInfoParser(t *testing.T) {
 
 func TestGnolandValidatorInfo(t *testing.T) {
 	rpcEndpoint := os.Getenv("TEST_BLOCK_GNOLAND_HOST_ADDRESS")
-	commonApp := common.NewCommonApp(p)
+	if rpcEndpoint == "" {
+		t.Skip("TEST_BLOCK_GNOLAND_HOST_ADDRESS not set (requires .env.test)")
+	}
+	commonApp := common.NewCommonApp(pGnoland)
 	commonApp.SetRPCEndPoint(rpcEndpoint)
 
 	valAddr := types.GnolandValidator{

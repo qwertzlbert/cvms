@@ -8,7 +8,10 @@ import (
 )
 
 func TestCheckGetBlockResultAndExtractFpVoting(t *testing.T) {
-	commonApp := common.NewCommonApp(p)
+	if testing.Short() {
+		t.Skip("skipping network test in short mode")
+	}
+	commonApp := common.NewCommonApp(pBabylon)
 	commonApp.SetRPCEndPoint("https://rpc-office.cosmostation.io/babylon-testnet")
 
 	txsEvents, _, _, err := GetBlockResults(commonApp.CommonClient, 92664)
@@ -26,7 +29,10 @@ func TestCheckGetBlockResultAndExtractFpVoting(t *testing.T) {
 }
 
 func Test_Babylon_GetFP(t *testing.T) {
-	commonApp := common.NewCommonApp(p)
+	if testing.Short() {
+		t.Skip("skipping network test in short mode")
+	}
+	commonApp := common.NewCommonApp(pBabylon)
 	commonApp.SetAPIEndPoint("https://lcd-office.cosmostation.io/babylon-testnet")
 	chainID := "bbn-testnet-5"
 	fps, err := GetBabylonFinalityProviderInfos(commonApp.CommonClient, chainID)
