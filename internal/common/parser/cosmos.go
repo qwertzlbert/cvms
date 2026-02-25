@@ -307,3 +307,19 @@ func decodeBase64IfPossible(text string) string {
 
 	return text
 }
+
+func CosmosConsensusmParamsParser(resp []byte) (float64, float64, error) {
+	var result types.CosmosConsensusParams
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return 0, 0, err
+	}
+	maxBytes, err := strconv.ParseFloat(result.Result.ConsensusParams.Block.MaxBytes, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	maxGas, err := strconv.ParseFloat(result.Result.ConsensusParams.Block.MaxGas, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	return maxBytes, maxGas, nil
+}

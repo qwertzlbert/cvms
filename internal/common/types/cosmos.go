@@ -372,3 +372,18 @@ type CosmosBlockData struct {
 	TxResults []TxResult
 	ConsensusParamUpdates
 }
+
+var CosmosConsensusParamsQueryPath = "/consensus_params"
+
+type CosmosConsensusParams struct {
+	Result struct {
+		ConsensusParams struct {
+			Block BlockParams `json:"block"`
+		} `json:"consensus_params"`
+	} `json:"result"`
+}
+
+type BlockParams struct {
+	MaxBytes string `json:"max_bytes"`
+	MaxGas   string `json:"max_gas"`
+}
