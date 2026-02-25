@@ -230,18 +230,18 @@ func CosmosSlashingParamsParser(resp []byte) (
 	return signedBlocksWindow, minSignedPerWindow, downtimeJailDuration, slashFractionDowntime, slashFractionDoubleSign, nil
 }
 
-// this function return two events but one of them will be empty events
-func CosmosBlockResultsParser(resp []byte) (txsEvents []types.BlockEvent, blockEvents []types.BlockEvent, err error) {
+// this function returns decoded events and consensus param updates from block_results.
+func CosmosBlockResultsParser(resp []byte) (txsEvents []types.BlockEvent, blockEvents []types.BlockEvent, blockData types.CosmosBlockData, err error) {
 	var preResult map[string]interface{}
 	if err := json.Unmarshal(resp, &preResult); err != nil {
-		return nil, nil, err
+		return nil, nil, types.CosmosBlockData{}, err
 	}
 
 	_, ok := preResult["jsonrpc"].(string)
 	if ok {
 		var result types.CosmosBlockResultResponse
 		if err := json.Unmarshal(resp, &result); err != nil {
-			return nil, nil, err
+			return nil, nil, types.CosmosBlockData{}, err
 		}
 
 		txsEvents := make([]types.BlockEvent, 0)
@@ -255,10 +255,14 @@ func CosmosBlockResultsParser(resp []byte) (txsEvents []types.BlockEvent, blockE
 		blockEvents = append(blockEvents, result.Result.FinalizeBlockEvents...)
 
 		decodedTxsEvents, decodedBlockEvents := DecodeEventsInBlockResults(txsEvents, blockEvents)
-		return decodedTxsEvents, decodedBlockEvents, nil
+		blockData = types.CosmosBlockData{
+			TxResults:            result.Result.TxsResults,
+			ConsensusParamUpdates: result.Result.ConsensusParamUpdates,
+		}
+		return decodedTxsEvents, decodedBlockEvents, blockData, nil
 	}
 
-	return nil, nil, errors.New("unexpected response data in block results")
+	return nil, nil, types.CosmosBlockData{}, errors.New("unexpected response data in block results")
 }
 
 func DecodeEventsInBlockResults(txsEvents []types.BlockEvent, blockEvents []types.BlockEvent) ([]types.BlockEvent, []types.BlockEvent) {

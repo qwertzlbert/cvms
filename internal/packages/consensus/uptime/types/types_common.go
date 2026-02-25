@@ -25,6 +25,7 @@ type ValidatorUptimeStatus struct {
 	ValidatorOperatorAddress  string  `json:"validator_operator_address"`
 	ValidatorConsensusAddress string  `json:"validator_consensus_addreess"`
 	MissedBlockCounter        float64 `json:"missed_block_counter"`
+	VotingPower               float64
 	IsTomstoned               float64
 	StakedTokens              float64
 	CommissionRate            float64

@@ -293,13 +293,24 @@ type CosmosBlockResultResponse struct {
 		// https://github.com/cometbft/cometbft/blob/v0.38.0/rpc/core/types/responses.go#L54
 		FinalizeBlockEvents []BlockEvent `json:"finalize_block_events"`
 		//
-		ValidatorUpdate       interface{}    `json:"-"`
-		ConsensusParamUpdates map[string]any `json:"-"`
+		ValidatorUpdate       interface{}             `json:"-"`
+		ConsensusParamUpdates ConsensusParamUpdates  `json:"consensus_param_updates"`
 	} `json:"result" validate:"required"`
 }
+
+type ConsensusParamUpdates struct {
+	Block struct {
+		MaxBytes string `json:"max_bytes"`
+		MaxGas   string `json:"max_gas"`
+	}
+}
+
 type TxResult struct {
-	Code   int64        `json:"code"`
-	Events []BlockEvent `json:"events"`
+	Code      int64        `json:"code"`
+	Data      string       `json:"data"`
+	GasWanted string       `json:"gas_wanted"`
+	GasUsed   string       `json:"gas_used"`
+	Events    []BlockEvent `json:"events"`
 }
 
 type BlockEvent struct {
@@ -354,4 +365,10 @@ type CosmosErrorResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Details []any  `json:"details"`
+}
+
+// CosmosBlockData holds block results and consensus param updates (from /block_results).
+type CosmosBlockData struct {
+	TxResults []TxResult
+	ConsensusParamUpdates
 }
