@@ -12,6 +12,23 @@ const (
 )
 
 func (vidx *VoteIndexer) initLabelsAndMetrics() {
+	indexPointerBlockHeightMetric := vidx.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   subsystem,
+		Name:        common.IndexPointerBlockHeightMetricName,
+		ConstLabels: vidx.PackageLabels,
+	})
+	indexPointerBlockTimestampMetric := vidx.Factory.NewGauge(prometheus.GaugeOpts{
+		Namespace:   common.Namespace,
+		Subsystem:   subsystem,
+		Name:        common.IndexPointerBlockTimestampMetricName,
+		ConstLabels: vidx.PackageLabels,
+	})
+	indexPointerBlockHeightMetric.Set(0)
+	vidx.MetricsMap[common.IndexPointerBlockHeightMetricName] = indexPointerBlockHeightMetric
+	indexPointerBlockTimestampMetric.Set(0)
+	vidx.MetricsMap[common.IndexPointerBlockTimestampMetricName] = indexPointerBlockTimestampMetric
+
 	recentMissCounterMetric := vidx.Factory.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace:   common.Namespace,
 		Subsystem:   subsystem,
@@ -38,7 +55,7 @@ func (vidx *VoteIndexer) updateRecentMissCounterMetric() {
 }
 
 func (idx *VoteIndexer) updateRootMetrics(indexPointer int64, indexPointerTimestamp time.Time) {
-	common.IndexPointer.With(idx.RootLabels).Set(float64(indexPointer))
-	common.IndexPointerTimestamp.With(idx.RootLabels).Set((float64(indexPointerTimestamp.Unix())))
+	idx.MetricsMap[common.IndexPointerBlockHeightMetricName].Set(float64(indexPointer))
+	idx.MetricsMap[common.IndexPointerBlockTimestampMetricName].Set(float64(indexPointerTimestamp.Unix()))
 	idx.Debugf("update prometheus metrics %d height", indexPointer)
 }

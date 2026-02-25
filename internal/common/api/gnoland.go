@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"net/http"
 	"sync"
 	"time"
 
@@ -20,9 +19,6 @@ func GetGnolandBFTValidators(c common.CommonClient, height ...int64) ([]types.Gn
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	// create requester
-	requester := c.RPCClient.R().SetContext(ctx)
-
 	totalValidators := make([]types.GnolandBFTValidator, 0)
 	var queryPath string
 
@@ -32,15 +28,12 @@ func GetGnolandBFTValidators(c common.CommonClient, height ...int64) ([]types.Gn
 		queryPath = types.GnolandBFTValidatorQueryPath()
 	}
 
-	resp, err := requester.Get(queryPath)
+	resp, err := c.RPCClient.Get(ctx, queryPath)
 	if err != nil {
-		return nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+		return nil, errors.Errorf("rpc call is failed from %s: %s", queryPath, err)
 	}
 
-	validators, err := parser.GnolandBFTValidatorParser(resp.Body())
+	validators, err := parser.GnolandBFTValidatorParser(resp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "got data, but failed to parse the data")
 	}
@@ -65,18 +58,12 @@ func GetGnolandBlock(c common.CommonClient, height int64) (
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	// create requester
-	requester := c.RPCClient.R().SetContext(ctx)
-
-	resp, err := requester.Get(types.GnolandBlockQueryPath(height))
+	resp, err := c.RPCClient.Get(ctx, types.GnolandBlockQueryPath(height))
 	if err != nil {
-		return 0, time.Time{}, "", nil, 0, nil, errors.Errorf("rpc call is failed from %s: %s", resp.Request.URL, err)
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return 0, time.Time{}, "", nil, 0, nil, errors.Errorf("stanage status code from %s: [%d]", resp.Request.URL, resp.StatusCode())
+		return 0, time.Time{}, "", nil, 0, nil, errors.Errorf("rpc call is failed from %s: %s", types.GnolandBlockQueryPath(height), err)
 	}
 
-	blockHeight, blockTimeStamp, blockProposerAddress, blockTxs, lastCommitBlockHeight, blockSignatures, err := parser.GnolandBlockParser(resp.Body())
+	blockHeight, blockTimeStamp, blockProposerAddress, blockTxs, lastCommitBlockHeight, blockSignatures, err := parser.GnolandBlockParser(resp)
 	if err != nil {
 		return 0, time.Time{}, "", nil, 0, nil, errors.Wrapf(err, "got data, but failed to parse the data")
 	}
@@ -90,19 +77,13 @@ func GetGnolandSysValidators(c common.CommonClient) ([]types.GnolandValidatorInf
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	// create requester
-	requester := c.RPCClient.R().SetContext(ctx)
-
 	// get on-chain validators in staking module
-	resp, err := requester.Get(types.GnolandSysValidatorQueryPath())
+	resp, err := c.RPCClient.Get(ctx, types.GnolandSysValidatorQueryPath())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed in api")
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Errorf("got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
 
-	decoded, err := parser.GnolandABCIParser(resp.Body())
+	decoded, err := parser.GnolandABCIParser(resp)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed in api")
 	}
@@ -170,20 +151,13 @@ func GetGnolandValidatorInfo(c common.CommonClient, gnolandVal types.GnolandVali
 	ctx, cancel := context.WithTimeout(context.Background(), common.Timeout)
 	defer cancel()
 
-	// create requester
-	requester := c.RPCClient.R().SetContext(ctx)
-
 	// get on-chain validators in staking module
-	resp, err := requester.Get(types.GnolandValidatorInfoQueryPath(gnolandVal.Address))
+	resp, err := c.RPCClient.Get(ctx, types.GnolandValidatorInfoQueryPath(gnolandVal.Address))
 	if err != nil {
 		return types.GnolandValidatorInfo{}, errors.Wrap(err, "failed in api")
 	}
-	if resp.StatusCode() != http.StatusOK {
-		return types.GnolandValidatorInfo{}, errors.Errorf("got %d code from %s", resp.StatusCode(), resp.Request.URL)
-	}
-	// fmt.Printf("resp: %s", resp.Body())
 
-	decoded, err := parser.GnolandABCIParser(resp.Body())
+	decoded, err := parser.GnolandABCIParser(resp)
 	if err != nil {
 		return types.GnolandValidatorInfo{}, errors.Wrap(err, "failed in api")
 	}

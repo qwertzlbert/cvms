@@ -10,7 +10,7 @@ import (
 
 func GetFinalityProviderUptime(exporter *common.Exporter) (types.BabylonFinalityProviderUptimeStatues, error) {
 	// 1. get finality provider infos
-	finalityProviderInfos, err := commonapi.GetBabylonFinalityProviderInfos(exporter.CommonClient)
+	finalityProviderInfos, err := commonapi.GetBabylonFinalityProviderInfos(exporter.CommonClient, exporter.ChainID)
 	if err != nil {
 		return types.BabylonFinalityProviderUptimeStatues{}, errors.Wrap(err, "failed to get babylon finality provider infos")
 	}
